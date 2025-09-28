@@ -17,7 +17,7 @@ def test_agg_trades():
     
     # 请求参数
     params = {
-        'symbol': 'ALPHA_22USDT',
+        'symbol': 'ALPHA_347USDT',
         'limit': 2  # 获取最近2条交易记录
     }
     

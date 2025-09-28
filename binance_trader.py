@@ -67,6 +67,10 @@ class BinanceTrader:
         self.auto_trading = {}  # 存储每个代币的自动交易状态
         self.trading_threads = {}  # 存储交易线程
         
+        # 4倍自动交易状态
+        self.trading_4x_active = False  # 4倍自动交易是否激活
+        self.trading_4x_thread = None  # 4倍自动交易线程
+        
         # 存储输入框和按钮的引用
         
         # 加载ALPHA代币ID映射
@@ -433,6 +437,43 @@ class BinanceTrader:
         )
         self.daily_total_label.pack(side='left', padx=5)
         
+        # 4倍自动交易控制行
+        trading_4x_control_frame = tk.Frame(self.root, bg='#f0f0f0')
+        trading_4x_control_frame.pack(fill='x', padx=10, pady=5)
+        
+        # 4倍自动交易相关控件
+        trading_4x_frame = tk.Frame(trading_4x_control_frame, bg='#f0f0f0')
+        trading_4x_frame.pack(side='left')
+        
+        # 交易次数输入框
+        tk.Label(
+            trading_4x_frame,
+            text="交易次数:",
+            font=('Arial', 10),
+            bg='#f0f0f0'
+        ).pack(side='left', padx=(0, 5))
+        
+        self.trading_count_var = tk.StringVar(value="8")
+        trading_count_entry = tk.Entry(
+            trading_4x_frame,
+            textvariable=self.trading_count_var,
+            width=8,
+            font=('Arial', 10)
+        )
+        trading_count_entry.pack(side='left', padx=(0, 10))
+        
+        # 4倍自动交易按钮
+        self.trading_4x_btn = tk.Button(
+            trading_4x_frame,
+            text="4倍自动交易",
+            command=self.start_4x_trading,
+            bg='#27ae60',
+            fg='white',
+            font=('Arial', 12, 'bold'),
+            padx=15
+        )
+        self.trading_4x_btn.pack(side='left', padx=5)
+        
         # 系统日志区域
         log_frame = tk.Frame(self.root, bg='#f0f0f0')
         log_frame.pack(fill='x', padx=10, pady=5)
@@ -741,105 +782,37 @@ class BinanceTrader:
         self.root.update_idletasks()
     
     def get_token_price(self, symbol):
-        """获取代币价格（使用K线接口）"""
+        """获取代币价格（使用聚合成交数据接口）"""
         try:
-            url = f"{self.base_url}/klines"
+            url = "https://www.binance.com/bapi/defi/v1/public/alpha-trade/agg-trades"
             params = {
                 'symbol': symbol,
-                'interval': '1s',  # 1秒间隔获取最新价格
-                'limit': 1  # 只获取1条K线数据
+                'limit': 1  # 只获取1条最新交易记录
             }
-            
-            # 价格获取使用公开接口，不需要认证信息
             
             # 使用公开接口的请求头
             headers = {
                 'Accept': '*/*',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
                 'Accept-Language': 'zh-CN,zh;q=0.9',
-                'Baggage': 'sentry-environment=prod,sentry-release=20250924-d1d0004c-2900,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=847f639347bc49be967b6777b03a413c,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
-                'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-                'Clienttype': 'web',
-                'Content-Type': 'application/json',
-                'Cookie': self.cookie,
-                'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQzMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-                'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-                'lang': 'zh-CN',
-                'Priority': 'u=1, i',
-                'Referer': 'https://www.binance.com/zh-CN/alpha/bsc/0xe6df05ce8c8301223373cf5b969afcb1498c5528',
-                'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                'Sentry-Trace': '847f639347bc49be967b6777b03a413c-ac242fc8bf0e51e2-0',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
-                'X-Passthrough-Token': '',
-                'X-Trace-Id': '000f2190-8b35-4cb1-aa27-d62a5017a918',
-                'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
             }
             
-            # 设置cookies
-            cookies = {
-                'theme': 'dark',
-                'bnc-uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-                '_gid': 'GA1.2.951612344.1758819202',
-                'BNC_FV_KEY': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-                'ref': 'FEQE7YL0',
-                'lang': 'zh-CN',
-                'language': 'zh-CN',
-                'se_sd': 'AQPAhWVkMHTCRVWMRBgVgZZDBDA9TEQUlsN5aVEd1lcUgVVNWV4A1',
-                'se_gd': 'QZaVlDhAHQRA1IaRXUBMgZZAFVQcUBQUlpc5aVEd1lcUgG1NWVAP1',
-                'se_gsd': 'YDo2XDtWNTAgCSMrNAgnMzkECQIaBQYaV11BUl1QVllaJ1NT1',
-                'currentAccount': '',
-                'logined': 'y',
-                'BNC-Location': 'CN',
-                'aws-waf-token': '6a2e990f-c746-49ff-9096-b327596dd9d8:BgoAZZh3lccKAAAA:frs4tlGhn0srGqMVNdKjOUR6E1AopfP/a3uZHcPKLSFBKkQjYpgbOsjbsL/PuL7PzWy1a6xg+L7J/Hnb9L5xAb88hAOBFBDOL358HxuVvNgpN41Rqv/RGGnERAcxnm6cSRWMXbe+yCluzdyiGMFLc5oMXF4CTn0fUmdeBrXbkaCX0HYuT8/3xnMjVTs2E0cbasI=',
-                '_gcl_au': '1.1.1119987010.1758819849',
-                'changeBasisTimeZone': '',
-                'userPreferredCurrency': 'USD_USD',
-                'BNC_FV_KEY_T': '101-ya6ZGxeFJ63HG8vatAZthWy4Sjc5qu1P2aV50Sb2TEtgnS4ZbkrDqmNQWTQ6cP%2FyOPWacDiBfIZ8GRjL8bGDig%3D%3D-dPwS3iTPmfQHOxcm1JrBNQ%3D%3D-0e',
-                'BNC_FV_KEY_EXPIRE': '1758929057818',
-                '_uetsid': 'a955dd009a3111f08ea99b841f36689a',
-                '_uetvid': 'a955d8909a3111f08c0c25e413aeab0c',
-                's9r1': 'CA65B5057A146BFF9C192E8BD726E97A',
-                'r20t': 'web.AD47E59A1520E690EFDD909400E9E08E',
-                'r30t': '1',
-                'cr00': 'F92A672B1280C3A02CAF0E64D3756059',
-                'd1og': 'web.1162735228.F4F8D3766A63F34B04DA0A322745A3C8',
-                'r2o1': 'web.1162735228.56CD4DF4A52B7CA2AA5BE433C63EABB1',
-                'f30l': 'web.1162735228.75764A4A9618F09433B203557F3AE012',
-                'p20t': 'web.1162735228.EBF4B2B5DB6916330942ED764FAEE65E',
-                '_ga_3WP50LGEEC': 'GS2.1.s1758904316$o4$g1$t1758912362$j36$l0$h0',
-                'OptanonConsent': 'isGpcEnabled=0&datestamp=Sat+Sep+27+2025+02%3A46%3A04+GMT%2B0800+(%E4%B8%AD%E5%9B%BD%E6%A0%87%E5%87%86%E6%97%B6%E9%97%B4)&version=202506.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=7e0430b4-07eb-4780-a2e2-48b9be3dd13c&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0003%3A1%2CC0004%3A1%2CC0002%3A1&AwaitingReconsent=false',
-                '_gat_UA-162512367-1': '1',
-                '_ga': 'GA1.2.1952928982.1758819202',
-                'sensorsdata2015jssdkcross': '%7B%22distinct_id%22%3A%221162735228%22%2C%22first_id%22%3A%2219981cb2b079d5-0702e12ae9987a-26061951-3686400-19981cb2b08181c%22%2C%22props%22%3A%7B%22aws_waf_referrer%22%3A%22%7B%5C%22referrer%5C%22%3A%5C%22https%3A%2F%2Falpha123.uk%2F%5C%22%7D%22%2C%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%7D%2C%22identities%22%3A%22eyIkaWRlbnRpdHlfY29va2llX2lkIjoiMTk5ODFjYjJiMDc5ZDUtMDcwMmUxMmFlOTk4N2EtMjYwNjE5NTEtMzY4NjQwMC0xOTk4MWNiMmIwODE4MWMiLCIkaWRlbnRpdHlfbG9naW5faWQiOiIxMTYyNzM1MjI4In0%3D%22%2C%22history_login_id%22%3A%7B%22name%22%3A%22%24identity_login_id%22%2C%22value%22%3A%221162735228%22%7D%2C%22%24device_id%22%3A%2219981dc7d84bdb-0b69a1775381dc8-26061951-3686400-19981dc7d851c20%22%7D',
-                '_gat': '1'
-            }
-            
-            # 创建session并设置cookies
-            session = requests.Session()
-            session.cookies.update(cookies)
-            
-            response = session.get(url, headers=headers, params=params, timeout=10)
+            response = requests.get(url, headers=headers, params=params, timeout=10)
             response.raise_for_status()
             
             data = response.json()
             
-            if data.get('code') == '000000' and data.get('success') == True:
-                kline_data = data.get('data', [])
-                if kline_data and len(kline_data) > 0:
-                    # 解析K线数据，返回格式化的价格数据
-                    kline = kline_data[0]
+            if data.get('code') == '000000':
+                trades = data.get('data', [])
+                if trades and len(trades) > 0:
+                    # 解析聚合成交数据，返回格式化的价格数据
+                    trade = trades[0]
                     return {
-                        'price': kline[4],  # 收盘价（最新价格）
-                        'open': kline[1],   # 开盘价
-                        'high': kline[2],   # 最高价
-                        'low': kline[3],    # 最低价
-                        'volume': kline[5], # 成交量
-                        'timestamp': kline[6]  # 收盘时间戳
+                        'price': trade.get('p'),  # 最新成交价格
+                        'quantity': trade.get('q'),  # 成交数量
+                        'timestamp': trade.get('T'),  # 成交时间戳
+                        'trade_id': trade.get('a'),  # 聚合交易ID
+                        'is_buyer_maker': trade.get('m')  # 是否为买方主动
                     }
                 else:
                     return None
@@ -1351,6 +1324,133 @@ class BinanceTrader:
             except Exception as e2:
                 self.log_message(f"Selenium也失败，尝试API: {str(e2)}")
                 return self.fetch_stability_data_api()
+    
+    def get_top_stability_token(self):
+        """获取除KOGE外稳定度排名第一的代币"""
+        try:
+            stability_data = self.fetch_stability_data()
+            if not stability_data:
+                return None
+            
+            # 过滤掉KOGE，API已经按稳定度排序，直接取第一个
+            for item in stability_data:
+                project = item.get('project', '')
+                if project and project.upper() != 'KOGE':
+                    alpha_id = self.alpha_id_map.get(project)
+                    if alpha_id:
+                        # 安全解析价格
+                        try:
+                            price_value = item.get('price', 0)
+                            price = float(price_value) if price_value else 0.0
+                        except (ValueError, TypeError):
+                            price = 0.0
+                        
+                        # 获取稳定度信息（用于显示）
+                        stability_info = item.get('stability', '未知')
+                        
+                        return {
+                            'symbol': f"{alpha_id}USDT",
+                            'display_name': project,
+                            'price': price,
+                            'stability': stability_info
+                        }
+            
+            return None
+            
+        except Exception as e:
+            self.log_message(f"获取稳定度排名第一代币失败: {str(e)}")
+            return None
+    
+    def start_4x_trading(self):
+        """开始4倍自动交易"""
+        if self.trading_4x_active:
+            # 停止4倍自动交易
+            self.trading_4x_active = False
+            self.trading_4x_btn.config(text="4倍自动交易", bg='#27ae60')
+            self.log_message("4倍自动交易已停止")
+        else:
+            # 开始4倍自动交易
+            try:
+                trading_count = int(self.trading_count_var.get())
+                if trading_count <= 0:
+                    self.log_message("交易次数必须大于0")
+                    return
+                
+                self.trading_4x_active = True
+                self.trading_4x_btn.config(text="停止4倍交易", bg='#e74c3c')
+                self.log_message(f"开始4倍自动交易，计划交易 {trading_count} 次")
+                
+                # 启动4倍自动交易线程
+                self.trading_4x_thread = threading.Thread(target=self.run_4x_trading, args=(trading_count,), daemon=True)
+                self.trading_4x_thread.start()
+                
+            except ValueError:
+                self.log_message("请输入有效的交易次数")
+    
+    def run_4x_trading(self, trading_count):
+        """运行4倍自动交易"""
+        completed_trades = 0
+        
+        while self.trading_4x_active and completed_trades < trading_count:
+            try:
+                # 获取稳定度排名第一的代币
+                top_token = self.get_top_stability_token()
+                
+                if not top_token:
+                    self.log_message("当前没有稳定高倍代币，等待15秒")
+                    time.sleep(15)
+                    continue
+                
+                symbol = top_token['symbol']
+                display_name = top_token['display_name']
+                price = top_token['price']
+                stability = top_token['stability']
+                
+                self.log_message(f"选择代币: {display_name} ({symbol})，稳定度: {stability}，价格: ${price}")
+                
+                # 执行一次买卖交易 - 直接调用toggle_auto_trading方法
+                # 临时设置代币到tokens中
+                if symbol not in self.tokens:
+                    self.tokens[symbol] = {
+                        'price': price,
+                        'last_update': datetime.now(),
+                        'display_name': display_name,
+                        'trade_count': 1,
+                        'trade_amount': 0.0,
+                        'auto_trading': False,
+                        'change_24h': 0.0,
+                        'last_buy_quantity': 0.0
+                    }
+                
+                # 调用toggle_auto_trading开始单次交易
+                self.toggle_auto_trading(symbol, single_trade=True)
+                
+                # 等待单次交易完成
+                self.wait_for_single_trade_completion(symbol)
+                
+                # 交易完成后计数
+                completed_trades += 1
+                self.log_message(f"4倍交易完成 {completed_trades}/{trading_count}")
+                
+                # 交易间隔
+                if self.trading_4x_active and completed_trades < trading_count:
+                    time.sleep(random.uniform(2, 5))
+                    
+            except Exception as e:
+                self.log_message(f"4倍自动交易异常: {str(e)}")
+                time.sleep(5)
+        
+        # 交易完成
+        self.trading_4x_active = False
+        self.root.after(0, lambda: self.trading_4x_btn.config(text="4倍自动交易", bg='#27ae60'))
+        self.log_message(f"4倍自动交易完成，共完成 {completed_trades} 次交易")
+    
+    def wait_for_single_trade_completion(self, symbol):
+        """等待单次交易完成"""
+        # 等待自动交易状态变为False（表示交易完成）
+        while self.auto_trading.get(symbol, False):
+            time.sleep(1)
+    
     
     def fetch_stability_data_requests(self):
         """使用requests直接调用API获取稳定度数据"""
@@ -1937,13 +2037,13 @@ class BinanceTrader:
         self.root.mainloop()
     
     
-    def toggle_auto_trading(self, symbol):
+    def toggle_auto_trading(self, symbol, single_trade=False):
         """切换自动交易状态"""
         display_name = self.tokens[symbol].get('display_name', symbol)
         
         # 添加调试信息
         current_status = self.auto_trading.get(symbol, False)
-        self.log_message(f"[DEBUG] {display_name} toggle_auto_trading 被调用，当前状态: {current_status}")
+        self.log_message(f"[DEBUG] {display_name} toggle_auto_trading 被调用，当前状态: {current_status}，单次交易: {single_trade}")
         
         if symbol in self.auto_trading and self.auto_trading[symbol]:
             # 停止自动交易
@@ -1964,6 +2064,10 @@ class BinanceTrader:
             
             self.auto_trading[symbol] = True
             self.tokens[symbol]['auto_trading'] = True
+            
+            # 如果是单次交易，设置trade_count为1
+            if single_trade:
+                self.tokens[symbol]['trade_count'] = 1
             
             # 启动自动交易线程
             thread = threading.Thread(target=self.auto_trade_worker, args=(symbol,), daemon=True)
@@ -2027,7 +2131,8 @@ class BinanceTrader:
                     time.sleep(random.uniform(1, 2))  # 等待0-1秒随机时间
                     check_count += 1
                     
-                    if self.check_single_order_filled(buy_order_id):
+                    order_status = self.check_single_order_filled(buy_order_id)
+                    if order_status == 'FILLED':
                         buy_filled = True
                     else:
                         if check_count < max_checks:
@@ -2094,7 +2199,8 @@ class BinanceTrader:
                     time.sleep(random.uniform(1, 2))  # 等待0-1秒随机时间
                     check_count += 1
                     
-                    if self.check_single_order_filled(sell_order_id):
+                    order_status = self.check_single_order_filled(sell_order_id)
+                    if order_status == 'FILLED':
                         sell_filled = True
                     else:
                         if check_count < max_checks:
@@ -2221,8 +2327,9 @@ class BinanceTrader:
                 'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
             }
             
-            # 计算数量 - KOGE代币使用1025，其他代币使用1030
+            # 计算数量：KOGE使用1025，其他代币使用1030
             base_amount = 1025 if symbol == "ALPHA_22USDT" else 1030
+            # base_amount = 1  # 测试模式：统一使用1 USDT
             working_quantity = base_amount / price
             
             # KOGE代币截取到4位小数，其他代币截取到2位小数
@@ -2234,7 +2341,11 @@ class BinanceTrader:
             # 计算支付金额
             if side == "BUY":
                 payment_amount = working_quantity_formatted * price
-                payment_amount_formatted = payment_amount  # 直接使用计算结果，无需额外截断
+                # 只有当小数位数超过8位时才截取
+                if len(str(payment_amount).split('.')[-1]) > 8:
+                    payment_amount_formatted = int(payment_amount * 100000000) / 100000000  # 截断到8位小数
+                else:
+                    payment_amount_formatted = payment_amount
                 payment_wallet_type = "CARD"
 
             else:  # SELL
@@ -2277,31 +2388,20 @@ class BinanceTrader:
                 payment_wallet_type = "ALPHA"
             
             # 构建请求数据
+            # 确保支付金额使用正确的精度（8位小数）
+            if side == "BUY":
+                amount_str = f"{payment_amount_formatted:.8f}"
+            else:
+                amount_str = str(payment_amount_formatted)
+            
             payload = {
                 "baseAsset": symbol.replace('USDT', ''),
                 "quoteAsset": "USDT",
                 "side": side,
                 "price": price,
                 "quantity": working_quantity_formatted,
-                "paymentDetails": [{"amount": str(payment_amount), "paymentWalletType": payment_wallet_type}]
+                "paymentDetails": [{"amount": amount_str, "paymentWalletType": payment_wallet_type}]
             }
-            
-            #打印买单请求参数
-            if side == "BUY":
-                print(f"\n=== 买单请求参数 ===")
-            else:
-                print(f"\n=== 卖单请求参数 ===")
-            print(f"代币: {symbol}")
-            print(f"基础金额: ${base_amount}")
-            print(f"价格: ${price}")
-            print(f"原始代币份额: {working_quantity:.8f}")
-            precision = "4位小数" if symbol == "ALPHA_22USDT" else "2位小数"
-            print(f"截断后代币份额({precision}): {working_quantity_formatted}")
-            print(f"支付金额: {payment_amount:.8f}")
-            print(f"支付方式: {payment_wallet_type}")
-            print("请求数据:")
-            print(json.dumps(payload, indent=2, ensure_ascii=False))
-            print("=" * 50)
             
             response = requests.post(url, headers=headers, json=payload, timeout=10)
             if response.status_code == 200:
@@ -2311,19 +2411,71 @@ class BinanceTrader:
                     if side == "BUY" and symbol in self.tokens:
                         self.tokens[symbol]['last_buy_quantity'] = working_quantity_formatted
                         self.log_message(f"已保存买单份额: {working_quantity_formatted}")
+
                     return data['data']  # 直接返回订单ID
                 else:
                     # 打印错误信息
                     error_code = data.get('code', 'unknown')
                     error_message = data.get('message', '未知错误')
                     self.log_message(f"{side}单下单失败 - 错误代码: {error_code}, 错误信息: {error_message}")
+                    
+                    # 控制台打印下单失败信息，方便排查
+                    error_info = f"""
+                                    === {side}单下单失败 ===
+                                    代币: {symbol}
+                                    价格: {price}
+                                    数量: {working_quantity_formatted}
+                                    支付金额: {payment_amount_formatted}
+                                    错误代码: {error_code}
+                                    错误信息: {error_message}
+                                    请求数据:
+                                    {json.dumps(payload, indent=2, ensure_ascii=False)}
+                                    {'=' * 50}
+                                """
+                    print(error_info)
+                    
+                    # 同时写入错误日志文件
+                    try:
+                        with open('errorLog.txt', 'a', encoding='utf-8') as f:
+                            f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_info}")
+                    except Exception as e:
+                        print(f"写入错误日志失败: {e}")
+                    
                     return None
             else:
-                self.log_message(f"{side}单下单请求失败 - HTTP状态码: {response.status_code}")
+                error_msg = f"{side}单下单请求失败 - HTTP状态码: {response.status_code}"
+                self.log_message(error_msg)
+                
+                # 写入错误日志文件
+                try:
+                    with open('errorLog.txt', 'a', encoding='utf-8') as f:
+                        f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}")
+                        f.write(f"\n代币: {symbol}")
+                        f.write(f"\n价格: {price}")
+                        f.write(f"\n数量: {working_quantity_formatted}")
+                        f.write(f"\n支付金额: {payment_amount_formatted}")
+                        f.write(f"\n{'=' * 50}\n")
+                except Exception as e:
+                    print(f"写入错误日志失败: {e}")
+                
                 return None
                 
         except Exception as e:
-            self.log_message(f"{side}单下单异常: {str(e)}")
+            error_msg = f"{side}单下单异常: {str(e)}"
+            self.log_message(error_msg)
+            
+            # 写入错误日志文件
+            try:
+                with open('errorLog.txt', 'a', encoding='utf-8') as f:
+                    f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}")
+                    f.write(f"\n代币: {symbol}")
+                    f.write(f"\n价格: {price}")
+                    f.write(f"\n数量: {working_quantity_formatted}")
+                    f.write(f"\n支付金额: {payment_amount_formatted}")
+                    f.write(f"\n{'=' * 50}\n")
+            except Exception as log_error:
+                print(f"写入错误日志失败: {log_error}")
+            
             return None
     
     def cancel_all_orders(self):
@@ -2382,7 +2534,7 @@ class BinanceTrader:
             return False
 
     def check_single_order_filled(self, order_id):
-        """检查单个订单是否已成交"""
+        """检查单个订单状态，返回订单状态"""
         try:
             # 获取今天和明天的时间戳
             now = datetime.now()
@@ -2396,7 +2548,7 @@ class BinanceTrader:
             params = {
                 'page': 1,
                 'rows': 1,  # 只获取最新1条订单
-                'orderStatus': 'FILLED',
+                'orderStatus': 'FILLED%2CPARTIALLY_FILLED%2CEXPIRED%2CCANCELED%2CREJECTED',
                 'startTime': start_time,
                 'endTime': end_time
             }
@@ -2437,32 +2589,50 @@ class BinanceTrader:
                 data = response.json()
                 if data.get('code') == '000000' and 'data' in data:
                     orders = data['data']
+                    
+                    # 调试信息：打印获取到的订单列表
+                    # print(f"\n=== 检查订单成交状态 ===")
+                    # print(f"查找订单ID: {order_id}")
+                    # print(f"查询时间范围: {datetime.fromtimestamp(start_time/1000)} 到 {datetime.fromtimestamp(end_time/1000)}")
+                    # print(f"获取到订单数量: {len(orders) if orders else 0}")
+                    # if orders:
+                    #     for i, order in enumerate(orders):
+                    #         order_time = datetime.fromtimestamp(int(order.get('time', 0))/1000) if order.get('time') else '未知'
+                    #         print(f"订单 {i+1}: ID={order.get('orderId')}, 状态={order.get('status')}, 方向={order.get('side')}, 时间={order_time}")
+                    # print("=" * 50)
+                    
                     if orders and len(orders) > 0:
                         # 检查最新订单是否匹配
                         latest_order = orders[0]
                         if str(latest_order.get('orderId')) == str(order_id):
-                            # 打印成交额信息
-                            cum_quote = latest_order.get('cumQuote', '0')
-                            side = latest_order.get('side', '')
-                            
-                            # 根据订单方向格式化成交额
-                            if side == 'SELL':
-                                # 卖单截取两位小数
-                                formatted_amount = f"{float(cum_quote):.2f}"
+                            # 检查订单状态是否为已成交
+                            order_status = latest_order.get('status', '')
+                            if order_status in ['FILLED', 'PARTIALLY_FILLED']:
+                                # 打印成交额信息
+                                cum_quote = latest_order.get('cumQuote', '0')
+                                side = latest_order.get('side', '')
+                                
+                                # 根据订单方向格式化成交额
+                                if side == 'SELL':
+                                    # 卖单截取两位小数
+                                    formatted_amount = f"{float(cum_quote):.2f}"
+                                else:
+                                    # 买单保持原精度
+                                    formatted_amount = cum_quote
+                                
+                                self.log_message(f"订单 {order_id} 成交，成交额: {formatted_amount} USDT")
+                                return order_status
                             else:
-                                # 买单保持原精度
-                                formatted_amount = cum_quote
-                            
-                            self.log_message(f"订单 {order_id} 成交，成交额: {formatted_amount} USDT")
-                            return True
-                return False
+                                # 订单状态不是已成交
+                                return order_status
+                return None
             else:
                 self.log_message(f"查询订单历史失败 - HTTP状态码: {response.status_code}")
-                return False
+                return None
                 
         except Exception as e:
             self.log_message(f"查询订单历史异常: {str(e)}")
-            return False
+            return None
 
     def check_orders_filled(self, buy_order_id, sell_order_id):
         """检查订单是否已成交"""
@@ -2478,8 +2648,8 @@ class BinanceTrader:
             url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/get-order-history-web"
             params = {
                 'page': 1,
-                'rows': 50,
-                'orderStatus': 'FILLED',
+                'rows': 1,
+                'orderStatus': 'FILLED%2CPARTIALLY_FILLED%2CEXPIRED%2CCANCELED%2CREJECTED',
                 'startTime': start_time,
                 'endTime': end_time
             }
@@ -2509,8 +2679,9 @@ class BinanceTrader:
     def update_trade_amount(self, symbol, price):
         """更新成交额"""
         try:
-            # KOGE代币每次交易增加1025 USDT，其他代币增加4*1030=4120 USDT
+            # 根据代币类型设置交易金额：KOGE使用1025，其他代币使用1030
             trade_amount = 1025.0 if symbol == "ALPHA_22USDT" else 4120.0
+            # trade_amount = 1.0  # 测试模式：统一使用1 USDT
             current_amount = self.tokens[symbol].get('trade_amount', 0.0)
             new_amount = current_amount + trade_amount
             
