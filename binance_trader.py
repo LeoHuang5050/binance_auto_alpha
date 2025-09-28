@@ -11,6 +11,7 @@ import requests
 import json
 import threading
 import time
+import random
 from datetime import datetime, timedelta
 import sys
 import os
@@ -46,6 +47,7 @@ class BinanceTrader:
         
         # 稳定度看板数据
         self.stability_data = []
+        self.stability_window = None  # 稳定度看板窗口引用
         
         # 用户设置的CSRF token和Cookie
         self.csrf_token = None
@@ -54,7 +56,11 @@ class BinanceTrader:
         # 配置文件路径
         self.config_file = "config.json"
         
-        # 加载配置
+        # 今日交易总额相关（先初始化默认值）
+        self.daily_total_amount = 0.0  # 今日交易总额
+        self.last_trade_date = None  # 最后交易日期
+        
+        # 加载配置（会覆盖上面的默认值）
         self.load_config()
         
         # 自动交易状态
@@ -69,8 +75,11 @@ class BinanceTrader:
         # 创建界面
         self.create_widgets()
         
-        # 添加常驻的KOGE代币
-        self.add_koge_token()
+        # 从稳定度看板添加常驻代币
+        self.add_permanent_tokens_from_stability()
+        
+        # 延迟更新今日交易总额显示，确保界面已完全创建
+        self.root.after(100, self.update_daily_total_display)
     
     def get_mac_address(self):
         """获取当前电脑的MAC地址"""
@@ -208,13 +217,73 @@ class BinanceTrader:
             print(f"加载alphaIdMap.json失败: {e}")
             return {"KOGE": "ALPHA_22"}
     
+    def add_permanent_tokens_from_stability(self):
+        """从稳定度看板添加常驻代币"""
+        try:
+            # 获取稳定度看板数据
+            stability_data = self.fetch_stability_data()
+            if not stability_data:
+                self.log_message("无法获取稳定度看板数据，将只添加KOGE代币")
+                self.add_koge_token()
+                return
+            
+            added_count = 0
+            for item in stability_data:
+                project = item.get('project', '')
+                if not project:
+                    continue
+                
+                # 查找对应的ALPHA ID
+                alpha_id = self.alpha_id_map.get(project)
+                if not alpha_id:
+                    continue
+                
+                alpha_symbol = f"{alpha_id}USDT"
+                
+                # 检查代币是否已在监控列表中
+                if alpha_symbol in self.tokens:
+                    continue
+                
+                # 获取稳定度看板返回的价格
+                stability_price = float(item.get('price', 0))
+                
+                # 添加代币到监控列表，直接使用稳定度看板的价格
+                self.tokens[alpha_symbol] = {
+                    'price': stability_price,
+                    'last_update': datetime.now(),
+                    'display_name': project,
+                    'trade_count': 1,
+                    'trade_amount': 0.0,
+                    'auto_trading': False,
+                    'change_24h': 0.0,  # 稳定度看板没有24h变化数据，设为0
+                    'last_buy_quantity': 0.0  # 存储上一个买单的份额
+                }
+                added_count += 1
+            
+            # 更新表格显示
+            self.update_tree_view()
+            
+            # 记录日志
+            if hasattr(self, 'log_text'):
+                self.log_message(f"已从稳定度看板添加 {added_count} 个常驻代币")
+            else:
+                print(f"已从稳定度看板添加 {added_count} 个常驻代币")
+            
+        except Exception as e:
+            self.log_message(f"从稳定度看板添加常驻代币失败: {str(e)}")
+            # 如果失败，至少添加KOGE代币
+            self.add_koge_token()
+    
     def add_koge_token(self):
-        """添加常驻的KOGE代币"""
+        """添加常驻的KOGE代币（备用方法）"""
         koge_symbol = "ALPHA_22USDT"  # KOGE的ALPHA ID
         self.tokens[koge_symbol] = {
             'price': 0.0,
             'last_update': datetime.now(),
-            'display_name': 'KOGE'
+            'display_name': 'KOGE',
+            'trade_count': 1,
+            'trade_amount': 0.0,
+            'auto_trading': False
         }
         # 更新表格显示
         self.update_tree_view()
@@ -226,6 +295,7 @@ class BinanceTrader:
         
         # 立即获取KOGE的价格数据
         self.fetch_koge_price()
+    
     
     def fetch_koge_price(self):
         """获取KOGE代币的价格数据"""
@@ -337,6 +407,31 @@ class BinanceTrader:
             padx=20
         )
         stability_btn.pack(side='left', padx=5)
+        
+        # 今日交易总额显示
+        daily_total_frame = tk.Frame(control_frame, bg='#f0f0f0')
+        daily_total_frame.pack(side='right', padx=10)
+        
+        tk.Label(
+            daily_total_frame,
+            text="今日交易总额:",
+            font=('Arial', 12, 'bold'),
+            bg='#f0f0f0',
+            fg='#2c3e50'
+        ).pack(side='left')
+        
+        self.daily_total_label = tk.Label(
+            daily_total_frame,
+            text="0.00 USDT",
+            font=('Arial', 12, 'bold'),
+            bg='#e8f5e8',
+            fg='#27ae60',
+            relief='raised',
+            bd=2,
+            padx=10,
+            pady=5
+        )
+        self.daily_total_label.pack(side='left', padx=5)
         
         # 系统日志区域
         log_frame = tk.Frame(self.root, bg='#f0f0f0')
@@ -1158,13 +1253,51 @@ class BinanceTrader:
         threading.Thread(target=refresh_data, daemon=True).start()
     
     def clear_tokens(self):
-        """清空所有代币（保留KOGE）"""
-        if messagebox.askyesno("确认", "确定要清空所有代币吗？（KOGE将保留）"):
-            # 保留KOGE代币
-            koge_token = self.tokens.get("ALPHA_22USDT")
+        """清空所有代币（保留稳定度看板中的代币）"""
+        if messagebox.askyesno("确认", "确定要清空所有代币吗？（稳定度看板中的代币将保留）"):
+            # 获取稳定度看板中的代币列表和价格
+            stability_tokens = {}
+            try:
+                stability_data = self.fetch_stability_data()
+                if stability_data:
+                    for item in stability_data:
+                        project = item.get('project', '')
+                        if project:
+                            alpha_id = self.alpha_id_map.get(project)
+                            if alpha_id:
+                                alpha_symbol = f"{alpha_id}USDT"
+                                stability_price = float(item.get('price', 0))
+                                stability_tokens[alpha_symbol] = {
+                                    'price': stability_price,
+                                    'display_name': project,
+                                    'change_24h': 0.0
+                                }
+            except Exception as e:
+                self.log_message(f"获取稳定度看板代币列表失败: {str(e)}")
+                # 如果失败，至少保留KOGE
+                stability_tokens["ALPHA_22USDT"] = {
+                    'price': 0.0,
+                    'display_name': 'KOGE',
+                    'change_24h': 0.0
+                }
+            
+            # 保留稳定度看板中的代币，使用稳定度看板的价格
+            permanent_tokens = {}
+            for symbol, stability_data in stability_tokens.items():
+                if symbol in self.tokens:
+                    token_data = self.tokens[symbol]
+                    permanent_tokens[symbol] = {
+                        'price': stability_data.get('price', token_data.get('price', 0.0)),
+                        'last_update': token_data.get('last_update', datetime.now()),
+                        'display_name': stability_data.get('display_name', token_data.get('display_name', '')),
+                        'trade_count': 1,
+                        'trade_amount': 0.0,
+                        'auto_trading': False,
+                        'change_24h': stability_data.get('change_24h', 0.0),
+                        'last_buy_quantity': token_data.get('last_buy_quantity', 0.0)  # 保留上一个买单份额
+                    }
             
             # 清理所有相关组件
-            # 先清理所有嵌入的组件
             for symbol, data in self.tokens.items():
                 if 'widgets' in data:
                     widgets = data['widgets']
@@ -1176,19 +1309,10 @@ class BinanceTrader:
             self.trading_threads.clear()
             
             self.tokens.clear()
-            if koge_token:
-                # 移除change_24h字段，添加交易相关字段
-                koge_token = {
-                    'price': koge_token['price'],
-                    'last_update': koge_token['last_update'],
-                    'display_name': koge_token['display_name'],
-                    'trade_count': 1,
-                    'trade_amount': 0.0,
-                    'auto_trading': False
-                }
-                self.tokens["ALPHA_22USDT"] = koge_token
+            self.tokens.update(permanent_tokens)
+            
             self.update_tree_view()
-            self.log_message("已清空所有代币（KOGE已保留）")
+            self.log_message(f"已清空所有代币（保留了 {len(permanent_tokens)} 个稳定度看板代币）")
     
     def refresh_single_token(self, symbol):
         """刷新单个代币价格"""
@@ -1550,8 +1674,19 @@ class BinanceTrader:
     
     def show_stability_dashboard(self):
         """显示稳定度看板窗口"""
+        # 检查是否已经存在稳定度看板窗口
+        if self.stability_window is not None and self.stability_window.winfo_exists():
+            # 如果窗口已存在，则将其提到前台并恢复显示
+            self.stability_window.lift()
+            self.stability_window.focus_force()
+            # 如果窗口被最小化，则恢复显示
+            if self.stability_window.state() == 'iconic':
+                self.stability_window.state('normal')
+            return
+        
         # 创建新窗口
         stability_window = tk.Toplevel(self.root)
+        self.stability_window = stability_window  # 保存窗口引用
         stability_window.title("稳定度看板 - Stability Dashboard")
         stability_window.geometry("800x600")
         stability_window.configure(bg='#2c3e50')
@@ -1627,6 +1762,12 @@ class BinanceTrader:
         # 存储引用
         stability_window.tree = tree
         stability_window.status_label = status_label
+        
+        # 添加窗口关闭事件处理
+        def on_window_close():
+            self.stability_window = None  # 清空窗口引用
+        
+        stability_window.protocol("WM_DELETE_WINDOW", on_window_close)
         
         # 初始加载数据
         self.refresh_stability_data(stability_window)
@@ -1732,6 +1873,17 @@ class BinanceTrader:
                     config = json.load(f)
                     self.csrf_token = config.get('csrf_token')
                     self.cookie = config.get('cookie')
+                    
+                    # 加载今日交易总额相关数据
+                    self.daily_total_amount = config.get('daily_total_amount', 0.0)
+                    self.last_trade_date = config.get('last_trade_date')
+                    
+                    print(f"已加载今日交易总额: {self.daily_total_amount:.2f} USDT")
+                    print(f"最后交易日期: {self.last_trade_date}")
+                    
+                    # 检查是否需要每日归零
+                    self.check_daily_reset()
+                    
                     if self.csrf_token and self.cookie:
                         print(f"已加载配置: CSRF Token: {self.csrf_token[:10]}..., Cookie: {self.cookie[:50]}...")
         except Exception as e:
@@ -1742,13 +1894,42 @@ class BinanceTrader:
         try:
             config = {
                 'csrf_token': self.csrf_token,
-                'cookie': self.cookie
+                'cookie': self.cookie,
+                'daily_total_amount': self.daily_total_amount,
+                'last_trade_date': self.last_trade_date
             }
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
             print("配置已保存")
         except Exception as e:
             print(f"保存配置文件失败: {e}")
+    
+    def check_daily_reset(self):
+        """检查是否需要每日归零"""
+        try:
+            today = datetime.now().strftime('%Y-%m-%d')
+            if self.last_trade_date != today:
+                # 日期不同，需要归零
+                if self.last_trade_date:
+                    self.log_message(f"检测到日期变化: {self.last_trade_date} -> {today}，今日交易总额已归零")
+                self.daily_total_amount = 0.0
+                self.last_trade_date = today
+                self.save_config()
+        except Exception as e:
+            self.log_message(f"检查每日归零失败: {str(e)}")
+    
+    def update_daily_total_display(self):
+        """更新今日交易总额显示"""
+        try:
+            if hasattr(self, 'daily_total_label') and self.daily_total_label:
+                self.daily_total_label.config(text=f"{self.daily_total_amount:.2f} USDT")
+                self.log_message(f"今日交易总额显示已更新: {self.daily_total_amount:.2f} USDT")
+            else:
+                self.log_message("今日交易总额标签尚未创建，将在界面完全加载后重试")
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_daily_total_display)
+        except Exception as e:
+            self.log_message(f"更新今日交易总额显示失败: {str(e)}")
 
     def run(self):
         """运行应用"""
@@ -1812,8 +1993,8 @@ class BinanceTrader:
                 # 1. 获取价格
                 price_data = self.get_token_price(symbol)
                 if not price_data:
-                    self.log_message(f"{display_name} 获取价格失败，等待5秒后重试")
-                    time.sleep(5)
+                    self.log_message(f"{display_name} 获取价格失败，等待1秒后重试")
+                    time.sleep(random.uniform(0, 1))
                     continue
                 
                 current_price = float(price_data['price'])
@@ -1823,8 +2004,8 @@ class BinanceTrader:
                 while self.auto_trading.get(symbol, False) and not buy_order_id:
                     buy_order_id = self.place_single_order(symbol, current_price, "BUY")
                     if not buy_order_id:
-                        self.log_message(f"{display_name} 买单下单失败，等待5秒后重试")
-                        time.sleep(5)
+                        self.log_message(f"{display_name} 买单下单失败，等待1秒后重试")
+                        time.sleep(random.uniform(0, 1))
                         # 重新获取价格
                         price_data = self.get_token_price(symbol)
                         if price_data:
@@ -1843,17 +2024,17 @@ class BinanceTrader:
                 self.log_message(f"[DEBUG] {display_name} 开始等待买单成交，auto_trading状态: {self.auto_trading.get(symbol, False)}")
                 
                 while self.auto_trading.get(symbol, False) and not buy_filled and check_count < max_checks:
-                    time.sleep(5)  # 等待5秒
+                    time.sleep(random.uniform(1, 2))  # 等待0-1秒随机时间
                     check_count += 1
                     
                     if self.check_single_order_filled(buy_order_id):
                         buy_filled = True
                     else:
                         if check_count < max_checks:
-                            self.log_message(f"{display_name} 买单尚未成交，5秒后继续检查委托状态")
+                            self.log_message(f"{display_name} 买单尚未成交，2秒后继续检查委托状态")
                         else:
                             # 6次检查后仍未成交，取消委托并重新下单
-                            self.log_message(f"{display_name} 委托已半分钟没有成交，取消委托")
+                            self.log_message(f"{display_name} 委托已约10秒没有成交，取消委托")
                             self.cancel_all_orders()
                             
                             # 重新获取价格并下单
@@ -1865,12 +2046,12 @@ class BinanceTrader:
                                     self.log_message(f"{display_name} 重新下单成功，价格为: {current_price}")
                                     check_count = 0  # 重置检查计数
                                 else:
-                                    self.log_message(f"{display_name} 重新下单失败，等待5秒后重试")
-                                    time.sleep(5)
+                                    self.log_message(f"{display_name} 重新下单失败，等待1秒后重试")
+                                    time.sleep(random.uniform(0, 1))
                                     continue  # 继续重试，不退出循环
                             else:
-                                self.log_message(f"{display_name} 重新获取价格失败，等待5秒后重试")
-                                time.sleep(5)
+                                self.log_message(f"{display_name} 重新获取价格失败，等待1秒后重试")
+                                time.sleep(random.uniform(0, 1))
                                 continue  # 继续重试，不退出循环
                 
                 # 如果自动交易被停止，跳出外层循环
@@ -1880,8 +2061,8 @@ class BinanceTrader:
                 # 4. 获取最新价格
                 price_data = self.get_token_price(symbol)
                 if not price_data:
-                    self.log_message(f"{display_name} 获取最新价格失败，等待5秒后重试")
-                    time.sleep(5)
+                    self.log_message(f"{display_name} 获取最新价格失败，等待1秒后重试")
+                    time.sleep(random.uniform(0, 1))
                     continue
                 
                 sell_price = float(price_data['price'])
@@ -1891,8 +2072,8 @@ class BinanceTrader:
                 while self.auto_trading.get(symbol, False) and not sell_order_id:
                     sell_order_id = self.place_single_order(symbol, sell_price, "SELL")
                     if not sell_order_id:
-                        self.log_message(f"{display_name} 卖单下单失败，等待5秒后重试")
-                        time.sleep(5)
+                        self.log_message(f"{display_name} 卖单下单失败，等待1秒后重试")
+                        time.sleep(random.uniform(0, 1))
                         # 重新获取价格
                         price_data = self.get_token_price(symbol)
                         if price_data:
@@ -1910,17 +2091,17 @@ class BinanceTrader:
                 max_checks = 6
                 
                 while self.auto_trading.get(symbol, False) and not sell_filled and check_count < max_checks:
-                    time.sleep(5)  # 等待5秒
+                    time.sleep(random.uniform(1, 2))  # 等待0-1秒随机时间
                     check_count += 1
                     
                     if self.check_single_order_filled(sell_order_id):
                         sell_filled = True
                     else:
                         if check_count < max_checks:
-                            self.log_message(f"{display_name} 卖单尚未成交，5秒后继续检查委托状态")
+                            self.log_message(f"{display_name} 卖单尚未成交，2秒后继续检查委托状态")
                         else:
                             # 6次检查后仍未成交，取消委托并重新下单
-                            self.log_message(f"{display_name} 委托已半分钟没有成交，取消委托")
+                            self.log_message(f"{display_name} 委托已约10秒没有成交，取消委托")
                             self.cancel_all_orders()
                             
                             # 重新获取价格并下单
@@ -1932,12 +2113,12 @@ class BinanceTrader:
                                     self.log_message(f"{display_name} 重新下单成功，价格为: {sell_price}")
                                     check_count = 0  # 重置检查计数
                                 else:
-                                    self.log_message(f"{display_name} 重新下单失败，等待5秒后重试")
-                                    time.sleep(5)
+                                    self.log_message(f"{display_name} 重新下单失败，等待1秒后重试")
+                                    time.sleep(random.uniform(0, 1))
                                     continue  # 继续重试，不退出循环
                             else:
-                                self.log_message(f"{display_name} 重新获取价格失败，等待5秒后重试")
-                                time.sleep(5)
+                                self.log_message(f"{display_name} 重新获取价格失败，等待1秒后重试")
+                                time.sleep(random.uniform(0, 1))
                                 continue  # 继续重试，不退出循环
                 
                 # 如果自动交易被停止，跳出外层循环
@@ -1953,7 +2134,7 @@ class BinanceTrader:
                 
             except Exception as e:
                 self.log_message(f"{display_name} 自动交易出错: {str(e)}")
-                time.sleep(5)
+                time.sleep(random.uniform(0, 1))
         
         # 交易完成
         self.auto_trading[symbol] = False
@@ -2040,22 +2221,58 @@ class BinanceTrader:
                 'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
             }
             
-            # 计算数量
-            base_amount = 1025
+            # 计算数量 - KOGE代币使用1025，其他代币使用1030
+            base_amount = 1025 if symbol == "ALPHA_22USDT" else 1030
             working_quantity = base_amount / price
-            working_quantity_formatted = int(working_quantity * 10000) / 10000  # 截断到4位小数
+            
+            # KOGE代币截取到4位小数，其他代币截取到2位小数
+            if symbol == "ALPHA_22USDT":
+                working_quantity_formatted = int(working_quantity * 10000) / 10000  # 截断到4位小数
+            else:
+                working_quantity_formatted = int(working_quantity * 100) / 100  # 截断到2位小数
             
             # 计算支付金额
             if side == "BUY":
                 payment_amount = working_quantity_formatted * price
-                payment_amount_formatted = int(payment_amount * 100000000) / 100000000  # 截断到8位小数
+                payment_amount_formatted = payment_amount  # 直接使用计算结果，无需额外截断
                 payment_wallet_type = "CARD"
+
             else:  # SELL
-                # 卖单动态计算手续费（0.01%），避免余额不足
-                fee_rate = 0.0001  # 0.01%
-                fee_amount = working_quantity_formatted * fee_rate
-                working_quantity_formatted = max(0, working_quantity_formatted - fee_amount)
-                working_quantity_formatted = int(working_quantity_formatted * 10000) / 10000  # 截断到4位小数
+                # 卖单直接使用上一个买单的份额，但需要考虑手续费
+                if symbol in self.tokens and self.tokens[symbol].get('last_buy_quantity', 0) > 0:
+                    # 获取上一个买单的份额
+                    last_buy_quantity = self.tokens[symbol]['last_buy_quantity']
+                    
+                    # 计算手续费（0.01%）
+                    fee_rate = 0.0001  # 0.01%
+                    fee_amount = last_buy_quantity * fee_rate
+                    
+                    # 扣除手续费后的实际可卖份额
+                    working_quantity_formatted = max(0, last_buy_quantity - fee_amount)
+                    
+                    # 按照代币类型截断到正确的小数位数
+                    if symbol == "ALPHA_22USDT":
+                        working_quantity_formatted = int(working_quantity_formatted * 10000) / 10000  # 截断到4位小数
+                    else:
+                        working_quantity_formatted = int(working_quantity_formatted * 100) / 100  # 截断到2位小数
+                    
+                    self.log_message(f"代币份额: {working_quantity_formatted}")
+                else:
+                    # 如果没有上一个买单份额，则使用当前计算的份额并扣除手续费
+                    fee_rate = 0.0001  # 0.01%
+                    fee_amount = working_quantity_formatted * fee_rate
+                    working_quantity_formatted = max(0, working_quantity_formatted - fee_amount)
+                    
+                    # 按照代币类型截断到正确的小数位数
+                    if symbol == "ALPHA_22USDT":
+                        working_quantity_formatted = int(working_quantity_formatted * 10000) / 10000  # 截断到4位小数
+                    else:
+                        working_quantity_formatted = int(working_quantity_formatted * 100) / 100  # 截断到2位小数
+                    
+                    self.log_message(f"没有找到上一个买单份额，使用当前计算份额并扣除手续费: {working_quantity_formatted}")
+                
+                # 卖单的支付金额就是代币数量
+                payment_amount = working_quantity_formatted
                 payment_amount_formatted = working_quantity_formatted
                 payment_wallet_type = "ALPHA"
             
@@ -2066,13 +2283,34 @@ class BinanceTrader:
                 "side": side,
                 "price": price,
                 "quantity": working_quantity_formatted,
-                "paymentDetails": [{"amount": str(payment_amount_formatted), "paymentWalletType": payment_wallet_type}]
+                "paymentDetails": [{"amount": str(payment_amount), "paymentWalletType": payment_wallet_type}]
             }
+            
+            #打印买单请求参数
+            if side == "BUY":
+                print(f"\n=== 买单请求参数 ===")
+            else:
+                print(f"\n=== 卖单请求参数 ===")
+            print(f"代币: {symbol}")
+            print(f"基础金额: ${base_amount}")
+            print(f"价格: ${price}")
+            print(f"原始代币份额: {working_quantity:.8f}")
+            precision = "4位小数" if symbol == "ALPHA_22USDT" else "2位小数"
+            print(f"截断后代币份额({precision}): {working_quantity_formatted}")
+            print(f"支付金额: {payment_amount:.8f}")
+            print(f"支付方式: {payment_wallet_type}")
+            print("请求数据:")
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+            print("=" * 50)
             
             response = requests.post(url, headers=headers, json=payload, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 if data.get('code') == '000000' and 'data' in data:
+                    # 买单成功后立即保存份额
+                    if side == "BUY" and symbol in self.tokens:
+                        self.tokens[symbol]['last_buy_quantity'] = working_quantity_formatted
+                        self.log_message(f"已保存买单份额: {working_quantity_formatted}")
                     return data['data']  # 直接返回订单ID
                 else:
                     # 打印错误信息
@@ -2271,15 +2509,27 @@ class BinanceTrader:
     def update_trade_amount(self, symbol, price):
         """更新成交额"""
         try:
-            # 每次交易固定增加1025 USDT
+            # KOGE代币每次交易增加1025 USDT，其他代币增加4*1030=4120 USDT
+            trade_amount = 1025.0 if symbol == "ALPHA_22USDT" else 4120.0
             current_amount = self.tokens[symbol].get('trade_amount', 0.0)
-            new_amount = current_amount + 1025.0
+            new_amount = current_amount + trade_amount
             
+            # 更新单个代币成交额
             self.tokens[symbol]['trade_amount'] = new_amount
+            
+            # 更新今日交易总额
+            self.daily_total_amount += trade_amount
+            self.last_trade_date = datetime.now().strftime('%Y-%m-%d')
+            
+            # 保存配置
+            self.save_config()
+            
+            # 更新界面
             self.root.after(0, self.update_tree_view)
+            self.root.after(0, self.update_daily_total_display)
             
             display_name = self.tokens[symbol].get('display_name', symbol)
-            self.log_message(f"{display_name} 成交额更新: {current_amount:.2f} -> {new_amount:.2f} USDT")
+            self.log_message(f"{display_name} 成交额更新: {current_amount:.2f} -> {new_amount:.2f} USDT，今日总额: {self.daily_total_amount:.2f} USDT")
         except Exception as e:
             self.log_message(f"更新成交额失败: {str(e)}")
 
