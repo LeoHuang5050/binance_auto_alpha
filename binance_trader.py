@@ -39,6 +39,11 @@ class BinanceTrader:
         if not self.check_mac_permission():
             return  # 权限校验失败，不继续初始化
         
+        # 创建log文件夹
+        self.log_dir = "log"
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+        
         # 币安ALPHA API基础URL
         self.base_url = "https://www.binance.com/bapi/defi/v1/public/alpha-trade"
         
@@ -759,11 +764,12 @@ class BinanceTrader:
         csrf_entry.focus()
     
     def log_message(self, message):
-        """添加日志消息"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
+        """添加日志消息 - 同时记录到控制台和文件"""
+        now = datetime.now()
+        timestamp = now.strftime("%H:%M:%S")
         log_msg = f"[{timestamp}] {message}\n"
         
-        # 检查log_text是否已创建
+        # 1. 显示到界面
         if hasattr(self, 'log_text'):
             self.log_text.insert(tk.END, log_msg)
             self.log_text.see(tk.END)
@@ -775,6 +781,25 @@ class BinanceTrader:
         else:
             # 如果log_text还未创建，先打印到控制台
             print(log_msg.strip())
+        
+        # 2. 写入到日志文件
+        try:
+            # 创建日期目录
+            date_str = now.strftime("%Y-%m-%d")
+            date_dir = os.path.join(self.log_dir, date_str)
+            if not os.path.exists(date_dir):
+                os.makedirs(date_dir)
+            
+            # 日志文件路径
+            log_file = os.path.join(date_dir, "system_running_log.txt")
+            
+            # 追加模式写入日志
+            with open(log_file, 'a', encoding='utf-8') as f:
+                full_timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"[{full_timestamp}] {message}\n")
+        except Exception as e:
+            # 如果写入文件失败，只打印到控制台，不影响程序运行
+            print(f"日志写入失败: {str(e)}")
     
     def update_status(self, message, color='green'):
         """更新状态标签"""
@@ -1432,9 +1457,12 @@ class BinanceTrader:
                 completed_trades += 1
                 self.log_message(f"4倍交易完成 {completed_trades}/{trading_count}")
                 
-                # 交易间隔
-                if self.trading_4x_active and completed_trades < trading_count:
-                    time.sleep(random.uniform(2, 5))
+                # 如果不是最后一次交易，才等待
+                if completed_trades < trading_count:
+                    # 交易间隔 - 每次交易完成后都等待10-15秒
+                    wait_time = random.uniform(10, 15)
+                    self.log_message(f"等待 {wait_time:.1f} 秒后获取下一个稳定高倍代币...")
+                    time.sleep(wait_time)
                     
             except Exception as e:
                 self.log_message(f"4倍自动交易异常: {str(e)}")
@@ -1456,7 +1484,7 @@ class BinanceTrader:
         """使用requests直接调用API获取稳定度数据"""
         try:
             # 直接调用API接口
-            api_url = "https://alpha123.uk/stability_feed.json"
+            api_url = "https://alpha123.uk/stability/stability_feed_v2.json"
             
             # 简化的请求头
             headers = {
@@ -1473,78 +1501,116 @@ class BinanceTrader:
             api_data = response.json()
             stability_data = []
             
-            # 根据您提供的JSON结构解析数据
+            # 根据新的JSON结构解析数据
             if isinstance(api_data, dict) and 'items' in api_data:
                 items = api_data['items']
+                self.log_message(f"找到 {len(items)} 个项目")
                 
                 for item in items:
                     if isinstance(item, dict):
-                        # 从display字段提取项目名称（去掉/USDT后缀）
-                        display = item.get('display', '')
-                        project = display.replace('/USDT', '') if display else item.get('key', '')
+                        # 从n字段提取项目名称（去掉/USDT后缀）
+                        project_name = item.get('n', '')
+                        project = project_name.replace('/USDT', '') if project_name else ''
                         
                         # 获取最新价格
-                        metrics = item.get('metrics', {})
-                        last_price = metrics.get('lastPrice', 0)
+                        last_price = item.get('p', 0)
                         
                         # 获取稳定度状态
-                        status = item.get('status', {})
-                        status_text = status.get('text', 'unknown')
+                        stability_text = item.get('st', 'unknown')
                         
                         # 转换稳定度为中文
                         stability_map = {
+                            'green:stable': '稳定',
+                            'yellow:general': '一般',
+                            'yellow:moderate': '一般',
+                            'red:unstable': '不稳定',
                             'stable': '稳定',
                             'unstable': '不稳定',
                             'general': '一般',
                             'moderate': '一般',
                             'unknown': '未知'
                         }
-                        stability = stability_map.get(status_text.lower(), '未知')
+                        stability = stability_map.get(stability_text.lower(), '未知')
                         
                         # 获取4倍剩余天数
-                        multiplier_days = item.get('multiplier_days', 0)
+                        multiplier_days = item.get('md', 0)
                         
-                        stability_data.append({
+                        # 获取价差（可选）
+                        spread = item.get('spr', 0)
+                        
+                        parsed_item = {
                             'project': project,
                             'stability': stability,
                             'price': str(last_price),
-                            'remaining_days': str(multiplier_days)
-                        })
+                            'remaining_days': str(multiplier_days),
+                            'spread': str(spread)
+                        }
+                        stability_data.append(parsed_item)
             
-            # 如果API返回的是数组格式
+            # 如果API返回的是数组格式（保持向后兼容）
             elif isinstance(api_data, list):
                 for item in api_data:
                     if isinstance(item, dict):
-                        display = item.get('display', '')
-                        project = display.replace('/USDT', '') if display else item.get('key', '')
-                        
-                        # 获取最新价格
-                        metrics = item.get('metrics', {})
-                        last_price = metrics.get('lastPrice', 0)
-                        
-                        # 获取稳定度状态
-                        status = item.get('status', {})
-                        status_text = status.get('text', 'unknown')
-                        
-                        # 转换稳定度为中文
-                        stability_map = {
-                            'stable': '稳定',
-                            'unstable': '不稳定',
-                            'general': '一般',
-                            'moderate': '一般',
-                            'unknown': '未知'
-                        }
-                        stability = stability_map.get(status_text.lower(), '未知')
-                        
-                        # 获取4倍剩余天数
-                        multiplier_days = item.get('multiplier_days', 0)
-                        
-                        stability_data.append({
-                            'project': project,
-                            'stability': stability,
-                            'price': str(last_price),
-                            'remaining_days': str(multiplier_days)
-                        })
+                        # 检查是否为新格式
+                        if 'n' in item and 'p' in item and 'st' in item:
+                            # 新格式解析
+                            project_name = item.get('n', '')
+                            project = project_name.replace('/USDT', '') if project_name else ''
+                            
+                            last_price = item.get('p', 0)
+                            stability_text = item.get('st', 'unknown')
+                            
+                            stability_map = {
+                                'green:stable': '稳定',
+                                'yellow:general': '一般',
+                                'yellow:moderate': '一般',
+                                'red:unstable': '不稳定',
+                                'stable': '稳定',
+                                'unstable': '不稳定',
+                                'general': '一般',
+                                'moderate': '一般',
+                                'unknown': '未知'
+                            }
+                            stability = stability_map.get(stability_text.lower(), '未知')
+                            
+                            multiplier_days = item.get('md', 0)
+                            spread = item.get('spr', 0)
+                            
+                            stability_data.append({
+                                'project': project,
+                                'stability': stability,
+                                'price': str(last_price),
+                                'remaining_days': str(multiplier_days),
+                                'spread': str(spread)
+                            })
+                        else:
+                            # 旧格式解析（向后兼容）
+                            display = item.get('display', '')
+                            project = display.replace('/USDT', '') if display else item.get('key', '')
+                            
+                            metrics = item.get('metrics', {})
+                            last_price = metrics.get('lastPrice', 0)
+                            
+                            status = item.get('status', {})
+                            status_text = status.get('text', 'unknown')
+                            
+                            stability_map = {
+                                'stable': '稳定',
+                                'unstable': '不稳定',
+                                'general': '一般',
+                                'moderate': '一般',
+                                'unknown': '未知'
+                            }
+                            stability = stability_map.get(status_text.lower(), '未知')
+                            
+                            multiplier_days = item.get('multiplier_days', 0)
+                            
+                            stability_data.append({
+                                'project': project,
+                                'stability': stability,
+                                'price': str(last_price),
+                                'remaining_days': str(multiplier_days)
+                            })
             
             # 对数据进行排序：KOGE固定排第一位，其他按稳定度排序
             def sort_key(item):
@@ -1838,6 +1904,25 @@ class BinanceTrader:
         columns = ('项目', '稳定度', '最新价', '4倍剩余天数', '操作')
         tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
         
+        # 配置标签样式
+        style = ttk.Style()
+        
+        # 稳定状态 - 绿色
+        style.configure("stable.Treeview", foreground="#2ecc71")
+        style.configure("stable.Treeview.Item", foreground="#2ecc71")
+        
+        # 一般状态 - 橙色
+        style.configure("moderate.Treeview", foreground="#f39c12")
+        style.configure("moderate.Treeview.Item", foreground="#f39c12")
+        
+        # 不稳定状态 - 红色
+        style.configure("unstable.Treeview", foreground="#e74c3c")
+        style.configure("unstable.Treeview.Item", foreground="#e74c3c")
+        
+        # 未知状态 - 灰色
+        style.configure("unknown.Treeview", foreground="#95a5a6")
+        style.configure("unknown.Treeview.Item", foreground="#95a5a6")
+        
         # 设置列标题和宽度
         tree.heading('项目', text='项目')
         tree.heading('稳定度', text='稳定度')
@@ -1865,6 +1950,7 @@ class BinanceTrader:
         
         # 添加窗口关闭事件处理
         def on_window_close():
+            stability_window.destroy()  # 销毁窗口
             self.stability_window = None  # 清空窗口引用
         
         stability_window.protocol("WM_DELETE_WINDOW", on_window_close)
@@ -1901,22 +1987,28 @@ class BinanceTrader:
             price = item['price']
             remaining_days = item['remaining_days']
             
-            # 根据稳定度设置颜色标签
+            # 根据稳定度设置颜色标签和样式
             stability_display = stability
-            if stability == "稳定":
-                stability_display = "🟢 稳定"
-            elif stability == "一般":
-                stability_display = "🟡 一般"
-            elif stability == "不稳定":
-                stability_display = "🔴 不稳定"
+            tag_name = "unknown"  # 默认标签
             
-            window.tree.insert('', 'end', values=(
+            if stability == "稳定":
+                stability_display = "🟢 稳定"  # 绿色圆点
+                tag_name = "stable"
+            elif stability == "一般":
+                stability_display = "🟡 一般"  # 橙色圆点
+                tag_name = "moderate"
+            elif stability == "不稳定":
+                stability_display = "🔴 不稳定"  # 红色圆点
+                tag_name = "unstable"
+            
+            # 插入数据并应用标签样式
+            item_id = window.tree.insert('', 'end', values=(
                 project,
                 stability_display,
                 price,
                 remaining_days,
                 "添加"
-            ))
+            ), tags=(tag_name,))
         
         window.status_label.config(text=f"已加载 {len(data)} 个项目", fg='green')
         
@@ -2103,10 +2195,11 @@ class BinanceTrader:
                 
                 current_price = float(price_data['price'])
                 
-                # 2. 下买单（重试机制）
+                # 2. 下买单（重试机制）- 使用最新价格+0.00000001提高撮合优先级
                 buy_order_id = None
                 while self.auto_trading.get(symbol, False) and not buy_order_id:
-                    buy_order_id = self.place_single_order(symbol, current_price, "BUY")
+                    buy_price = current_price + 0.00000001  # 买单价格提高0.00000001
+                    buy_order_id = self.place_single_order(symbol, buy_price, "BUY")
                     if not buy_order_id:
                         self.log_message(f"{display_name} 买单下单失败，等待1秒后重试")
                         time.sleep(random.uniform(0, 1))
@@ -2119,48 +2212,20 @@ class BinanceTrader:
                 if not self.auto_trading.get(symbol, False):
                     break
                 
-                self.log_message(f"{display_name} 买单下单成功，价格为: {current_price}")
+                self.log_message(f"{display_name} 买单下单成功，order_id: {buy_order_id}，价格为: {buy_price}")
                 
-                # 3. 等待买单成交（最多6次检查，30秒）
-                buy_filled = False
-                check_count = 0
-                max_checks = 6
+                # 3. 等待买单成交（使用递归方法处理）
                 self.log_message(f"[DEBUG] {display_name} 开始等待买单成交，auto_trading状态: {self.auto_trading.get(symbol, False)}")
-                
-                while self.auto_trading.get(symbol, False) and not buy_filled and check_count < max_checks:
-                    time.sleep(random.uniform(1, 2))  # 等待0-1秒随机时间
-                    check_count += 1
-                    
-                    order_status = self.check_single_order_filled(buy_order_id)
-                    if order_status == 'FILLED':
-                        buy_filled = True
-                    else:
-                        if check_count < max_checks:
-                            self.log_message(f"{display_name} 买单尚未成交，2秒后继续检查委托状态")
-                        else:
-                            # 6次检查后仍未成交，取消委托并重新下单
-                            self.log_message(f"{display_name} 委托已约10秒没有成交，取消委托")
-                            self.cancel_all_orders()
-                            
-                            # 重新获取价格并下单
-                            price_data = self.get_token_price(symbol)
-                            if price_data:
-                                current_price = float(price_data['price'])
-                                buy_order_id = self.place_single_order(symbol, current_price, "BUY")
-                                if buy_order_id:
-                                    self.log_message(f"{display_name} 重新下单成功，价格为: {current_price}")
-                                    check_count = 0  # 重置检查计数
-                                else:
-                                    self.log_message(f"{display_name} 重新下单失败，等待1秒后重试")
-                                    time.sleep(random.uniform(0, 1))
-                                    continue  # 继续重试，不退出循环
-                            else:
-                                self.log_message(f"{display_name} 重新获取价格失败，等待1秒后重试")
-                                time.sleep(random.uniform(0, 1))
-                                continue  # 继续重试，不退出循环
+                buy_filled = self.handle_order_status(symbol, buy_order_id, display_name, "BUY")
                 
                 # 如果自动交易被停止，跳出外层循环
                 if not self.auto_trading.get(symbol, False):
+                    self.log_message(f"{display_name} 自动交易已停止，退出交易循环")
+                    break
+                
+                # 如果买单失败，跳出外层循环
+                if not buy_filled:
+                    self.log_message(f"{display_name} 买单失败，退出交易循环")
                     break
                 
                 # 4. 获取最新价格
@@ -2172,10 +2237,11 @@ class BinanceTrader:
                 
                 sell_price = float(price_data['price'])
                 
-                # 5. 下卖单（重试机制）
+                # 5. 下卖单（重试机制）- 使用最新价格-0.00000001提高撮合优先级
                 sell_order_id = None
                 while self.auto_trading.get(symbol, False) and not sell_order_id:
-                    sell_order_id = self.place_single_order(symbol, sell_price, "SELL")
+                    sell_price_adjusted = sell_price - 0.00000001  # 卖单价格降低0.00000001
+                    sell_order_id = self.place_single_order(symbol, sell_price_adjusted, "SELL")
                     if not sell_order_id:
                         self.log_message(f"{display_name} 卖单下单失败，等待1秒后重试")
                         time.sleep(random.uniform(0, 1))
@@ -2188,44 +2254,10 @@ class BinanceTrader:
                 if not self.auto_trading.get(symbol, False):
                     break
                 
-                self.log_message(f"{display_name} 卖单下单成功，价格为: {sell_price}")
+                self.log_message(f"{display_name} 卖单下单成功，order_id: {sell_order_id}，价格为: {sell_price_adjusted}")
                 
-                # 6. 等待卖单成交（最多6次检查，30秒）
-                sell_filled = False
-                check_count = 0
-                max_checks = 6
-                
-                while self.auto_trading.get(symbol, False) and not sell_filled and check_count < max_checks:
-                    time.sleep(random.uniform(1, 2))  # 等待0-1秒随机时间
-                    check_count += 1
-                    
-                    order_status = self.check_single_order_filled(sell_order_id)
-                    if order_status == 'FILLED':
-                        sell_filled = True
-                    else:
-                        if check_count < max_checks:
-                            self.log_message(f"{display_name} 卖单尚未成交，2秒后继续检查委托状态")
-                        else:
-                            # 6次检查后仍未成交，取消委托并重新下单
-                            self.log_message(f"{display_name} 委托已约10秒没有成交，取消委托")
-                            self.cancel_all_orders()
-                            
-                            # 重新获取价格并下单
-                            price_data = self.get_token_price(symbol)
-                            if price_data:
-                                sell_price = float(price_data['price'])
-                                sell_order_id = self.place_single_order(symbol, sell_price, "SELL")
-                                if sell_order_id:
-                                    self.log_message(f"{display_name} 重新下单成功，价格为: {sell_price}")
-                                    check_count = 0  # 重置检查计数
-                                else:
-                                    self.log_message(f"{display_name} 重新下单失败，等待1秒后重试")
-                                    time.sleep(random.uniform(0, 1))
-                                    continue  # 继续重试，不退出循环
-                            else:
-                                self.log_message(f"{display_name} 重新获取价格失败，等待1秒后重试")
-                                time.sleep(random.uniform(0, 1))
-                                continue  # 继续重试，不退出循环
+                # 6. 等待卖单成交（使用递归方法处理）
+                sell_filled = self.handle_order_status(symbol, sell_order_id, display_name, "SELL")
                 
                 # 如果自动交易被停止，跳出外层循环
                 if not self.auto_trading.get(symbol, False):
@@ -2236,7 +2268,7 @@ class BinanceTrader:
                 self.log_message(f"{display_name} 第 {completed_trades} 次买卖完成")
                 
                 # 更新成交额
-                self.update_trade_amount(symbol, sell_price)
+                self.update_trade_amount(symbol, sell_price_adjusted)
                 
             except Exception as e:
                 self.log_message(f"{display_name} 自动交易出错: {str(e)}")
@@ -2294,8 +2326,18 @@ class BinanceTrader:
             self.log_message(f"下单异常: {str(e)}")
             return None, None
     
-    def place_single_order(self, symbol, price, side):
+    def place_single_order(self, symbol, price, side, custom_quantity=None):
         """创建单向订单（买单或卖单）"""
+        # 记录交易详情
+        trade_detail = {
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'symbol': symbol,
+            'side': side,
+            'price': price,
+            'custom_quantity': custom_quantity,
+            'status': 'started'
+        }
+        
         try:
             url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place"
             
@@ -2330,7 +2372,13 @@ class BinanceTrader:
             # 计算数量：KOGE使用1025，其他代币使用1030
             base_amount = 1025 if symbol == "ALPHA_22USDT" else 1030
             # base_amount = 1  # 测试模式：统一使用1 USDT
-            working_quantity = base_amount / price
+            
+            if custom_quantity is not None:
+                # 使用自定义数量
+                working_quantity = custom_quantity
+            else:
+                # 使用基础金额计算
+                working_quantity = base_amount / price
             
             # KOGE代币截取到4位小数，其他代币截取到2位小数
             if symbol == "ALPHA_22USDT":
@@ -2338,9 +2386,12 @@ class BinanceTrader:
             else:
                 working_quantity_formatted = int(working_quantity * 100) / 100  # 截断到2位小数
             
+            # 先格式化价格，确保精度一致（8位小数）
+            price_formatted = int(price * 100000000) / 100000000
+            
             # 计算支付金额
             if side == "BUY":
-                payment_amount = working_quantity_formatted * price
+                payment_amount = working_quantity_formatted * price_formatted
                 # 只有当小数位数超过8位时才截取
                 if len(str(payment_amount).split('.')[-1]) > 8:
                     payment_amount_formatted = int(payment_amount * 100000000) / 100000000  # 截断到8位小数
@@ -2387,7 +2438,6 @@ class BinanceTrader:
                 payment_amount_formatted = working_quantity_formatted
                 payment_wallet_type = "ALPHA"
             
-            # 构建请求数据
             # 确保支付金额使用正确的精度（8位小数）
             if side == "BUY":
                 amount_str = f"{payment_amount_formatted:.8f}"
@@ -2398,26 +2448,60 @@ class BinanceTrader:
                 "baseAsset": symbol.replace('USDT', ''),
                 "quoteAsset": "USDT",
                 "side": side,
-                "price": price,
+                "price": price_formatted,
                 "quantity": working_quantity_formatted,
                 "paymentDetails": [{"amount": amount_str, "paymentWalletType": payment_wallet_type}]
             }
             
+            # 记录请求参数
+            trade_detail['request_params'] = {
+                'url': url,
+                'headers': headers,
+                'payload': payload
+            }
+            
             response = requests.post(url, headers=headers, json=payload, timeout=10)
+            
+            # 记录响应信息
+            trade_detail['response'] = {
+                'status_code': response.status_code,
+                'headers': dict(response.headers),
+                'text': response.text
+            }
+            
             if response.status_code == 200:
                 data = response.json()
+                trade_detail['response']['json'] = data
+                
                 if data.get('code') == '000000' and 'data' in data:
+                    # 记录成功信息
+                    trade_detail['status'] = 'success'
+                    trade_detail['order_id'] = data['data']
+                    
                     # 买单成功后立即保存份额
                     if side == "BUY" and symbol in self.tokens:
                         self.tokens[symbol]['last_buy_quantity'] = working_quantity_formatted
                         self.log_message(f"已保存买单份额: {working_quantity_formatted}")
 
+                    # 记录交易详情到文件
+                    self.log_trade_detail(trade_detail)
+                    
                     return data['data']  # 直接返回订单ID
                 else:
+                    # 记录失败信息
+                    trade_detail['status'] = 'failed'
+                    trade_detail['error'] = {
+                        'code': data.get('code', 'unknown'),
+                        'message': data.get('message', '未知错误')
+                    }
+                    
                     # 打印错误信息
                     error_code = data.get('code', 'unknown')
                     error_message = data.get('message', '未知错误')
                     self.log_message(f"{side}单下单失败 - 错误代码: {error_code}, 错误信息: {error_message}")
+                    
+                    # 记录交易详情到文件
+                    self.log_trade_detail(trade_detail)
                     
                     # 控制台打印下单失败信息，方便排查
                     error_info = f"""
@@ -2436,45 +2520,49 @@ class BinanceTrader:
                     
                     # 同时写入错误日志文件
                     try:
-                        with open('errorLog.txt', 'a', encoding='utf-8') as f:
+                        # 创建日期目录
+                        date_str = datetime.now().strftime('%Y-%m-%d')
+                        date_dir = os.path.join(self.log_dir, date_str)
+                        if not os.path.exists(date_dir):
+                            os.makedirs(date_dir)
+                        
+                        # 错误日志文件路径
+                        error_log_file = os.path.join(date_dir, "error_log.txt")
+                        with open(error_log_file, 'a', encoding='utf-8') as f:
                             f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_info}")
                     except Exception as e:
                         print(f"写入错误日志失败: {e}")
                     
                     return None
             else:
+                # 记录HTTP错误
+                trade_detail['status'] = 'http_error'
+                trade_detail['error'] = {
+                    'status_code': response.status_code,
+                    'message': f"HTTP状态码: {response.status_code}"
+                }
+                
                 error_msg = f"{side}单下单请求失败 - HTTP状态码: {response.status_code}"
                 self.log_message(error_msg)
                 
-                # 写入错误日志文件
-                try:
-                    with open('errorLog.txt', 'a', encoding='utf-8') as f:
-                        f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}")
-                        f.write(f"\n代币: {symbol}")
-                        f.write(f"\n价格: {price}")
-                        f.write(f"\n数量: {working_quantity_formatted}")
-                        f.write(f"\n支付金额: {payment_amount_formatted}")
-                        f.write(f"\n{'=' * 50}\n")
-                except Exception as e:
-                    print(f"写入错误日志失败: {e}")
+                # 记录交易详情到文件
+                self.log_trade_detail(trade_detail)
                 
                 return None
                 
         except Exception as e:
+            # 记录异常错误
+            trade_detail['status'] = 'exception'
+            trade_detail['error'] = {
+                'message': str(e),
+                'type': type(e).__name__
+            }
+            
             error_msg = f"{side}单下单异常: {str(e)}"
             self.log_message(error_msg)
             
-            # 写入错误日志文件
-            try:
-                with open('errorLog.txt', 'a', encoding='utf-8') as f:
-                    f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}")
-                    f.write(f"\n代币: {symbol}")
-                    f.write(f"\n价格: {price}")
-                    f.write(f"\n数量: {working_quantity_formatted}")
-                    f.write(f"\n支付金额: {payment_amount_formatted}")
-                    f.write(f"\n{'=' * 50}\n")
-            except Exception as log_error:
-                print(f"写入错误日志失败: {log_error}")
+            # 记录交易详情到文件
+            self.log_trade_detail(trade_detail)
             
             return None
     
@@ -2548,7 +2636,7 @@ class BinanceTrader:
             params = {
                 'page': 1,
                 'rows': 1,  # 只获取最新1条订单
-                'orderStatus': 'FILLED%2CPARTIALLY_FILLED%2CEXPIRED%2CCANCELED%2CREJECTED',
+                'orderStatus': 'FILLED,PARTIALLY_FILLED,EXPIRED,CANCELED,REJECTED',
                 'startTime': start_time,
                 'endTime': end_time
             }
@@ -2649,7 +2737,7 @@ class BinanceTrader:
             params = {
                 'page': 1,
                 'rows': 1,
-                'orderStatus': 'FILLED%2CPARTIALLY_FILLED%2CEXPIRED%2CCANCELED%2CREJECTED',
+                'orderStatus': 'FILLED,PARTIALLY_FILLED,EXPIRED,CANCELED,REJECTED',
                 'startTime': start_time,
                 'endTime': end_time
             }
@@ -2703,6 +2791,397 @@ class BinanceTrader:
             self.log_message(f"{display_name} 成交额更新: {current_amount:.2f} -> {new_amount:.2f} USDT，今日总额: {self.daily_total_amount:.2f} USDT")
         except Exception as e:
             self.log_message(f"更新成交额失败: {str(e)}")
+
+    def handle_order_status(self, symbol, order_id, display_name, side, check_count=0, max_checks=5):
+        """
+        递归检查订单状态
+        :param symbol: 交易对符号
+        :param order_id: 订单ID
+        :param display_name: 显示名称
+        :param side: 订单方向（"BUY" 或 "SELL"）
+        :param check_count: 当前检查次数
+        :param max_checks: 最大检查次数
+        :return: True if order is filled, False otherwise
+        """
+        # 检查自动交易状态
+        if not self.auto_trading.get(symbol, False):
+            self.log_message(f"{display_name} 自动交易已停止")
+            return False
+
+        # 等待随机时间
+        time.sleep(random.uniform(1, 2))
+
+        # 检查订单状态
+        try:
+            order_status = self.check_single_order_filled(order_id)
+            self.log_message(f"{display_name} 检查{side}单状态: {order_status}, 检查次数: {check_count + 1}")
+        except Exception as e:
+            self.log_message(f"{display_name} 检查{side}单状态失败: {e}")
+            time.sleep(random.uniform(0, 1))
+            return False
+
+        if order_status == "FILLED":
+            self.log_message(f"{display_name} {side}单已成交")
+            return True
+        elif order_status == "PARTIALLY_FILLED":
+            self.log_message(f"{display_name} {side}单部分成交，开始处理剩余份额")
+            try:
+                # 先查询5次，每次间隔1-2秒
+                for i in range(5):
+                    self.log_message(f"{display_name} 第{i+1}次查询部分成交状态...")
+                    time.sleep(random.uniform(1, 2))
+                    
+                    # 重新检查订单状态
+                    new_status = self.check_single_order_filled(order_id)
+                    if new_status == "FILLED":
+                        self.log_message(f"{display_name} 第{i+1}次查询：{side}单已完全成交")
+                        return True
+                    elif new_status != "PARTIALLY_FILLED":
+                        self.log_message(f"{display_name} 第{i+1}次查询：{side}单状态变为 {new_status}")
+                        # 如果不是部分成交，按其他状态处理
+                        if new_status == "CANCELED":
+                            return self.handle_canceled_order(symbol, side, display_name, order_id)
+                        else:
+                            result = self.retry_order_with_new_price(order_id, symbol, side, display_name)
+                            if side == "BUY":
+                                return result
+                            return result
+                
+                # 5次查询后仍然是部分成交，取消订单
+                self.log_message(f"{display_name} 5次查询后仍为部分成交，取消订单")
+                self.cancel_all_orders()
+                time.sleep(2)  # 等待取消生效
+                
+                # Double check订单状态
+                final_status = self.check_single_order_filled(order_id)
+                self.log_message(f"{display_name} Double check: {side}单状态为 {final_status}")
+                
+                if final_status == "FILLED":
+                    self.log_message(f"{display_name} 取消后{side}单已完全成交")
+                    return True
+                elif final_status == "CANCELED":
+                    # 获取已取消订单的份额信息
+                    canceled_order_info = self.get_order_details()
+                    if canceled_order_info:
+                        orig_qty = float(canceled_order_info.get('origQty', 0))
+                        executed_qty = float(canceled_order_info.get('executedQty', 0))
+                        remaining_qty = orig_qty - executed_qty
+                        
+                        self.log_message(f"{display_name} 已取消订单详情:")
+                        self.log_message(f"  - 原始数量: {orig_qty}")
+                        self.log_message(f"  - 已成交数量: {executed_qty}")
+                        self.log_message(f"  - 剩余数量: {remaining_qty}")
+                        
+                        if remaining_qty > 0:
+                            return self.retry_order_with_remaining_qty(symbol, side, display_name, remaining_qty)
+                        else:
+                            self.log_message(f"{display_name} 没有剩余份额需要处理")
+                            return True
+                    else:
+                        self.log_message(f"{display_name} 无法获取已取消订单详情")
+                        result = self.retry_order_with_new_price(order_id, symbol, side, display_name)
+                        if side == "BUY":
+                            return result
+                        return result
+                else:
+                    self.log_message(f"{display_name} 取消后{side}单状态异常: {final_status}")
+                    result = self.retry_order_with_new_price(order_id, symbol, side, display_name)
+                    if side == "BUY":
+                        return result
+                    return result
+                    
+            except Exception as e:
+                self.log_message(f"{display_name} 处理部分成交失败: {e}")
+                result = self.retry_order_with_new_price(order_id, symbol, side, display_name)
+                if side == "BUY":
+                    return result
+                return result
+        else:
+            # 未成交，检查次数是否达到上限
+            if check_count + 1 < max_checks:
+                self.log_message(f"{display_name} {side}单尚未成交，2秒后继续检查")
+                return self.handle_order_status(symbol, order_id, display_name, side, check_count + 1, max_checks)
+            else:
+                self.log_message(f"{display_name} {side}单约10秒未成交，取消订单")
+                try:
+                    self.cancel_all_orders()
+                    # 取消后等待2秒，然后双重检查订单状态
+                    time.sleep(2)
+                    self.log_message(f"{display_name} 取消后双重检查订单状态")
+                    final_status = self.check_single_order_filled(order_id)
+                    
+                    if final_status == 'FILLED':
+                        self.log_message(f"{display_name} Double check: {side}单已成交，继续流程")
+                        return True
+                    else:
+                        self.log_message(f"{display_name} Double check: {side}单状态为 {final_status}，继续重试")
+                        # 不返回，继续执行后面的 retry_order_with_new_price
+                        
+                except Exception as e:
+                    self.log_message(f"{display_name} 取消{side}单失败: {e}")
+                    result = self.retry_order_with_new_price(order_id, symbol, side, display_name)
+                    # 如果是买单且切换了代币，根据返回值决定是否继续
+                    if side == "BUY":
+                        if result:
+                            # 返回True表示可以继续尝试买单（代币相同或切换成功）
+                            return True
+                        else:
+                            # 返回False表示买单失败
+                            return False
+                    return result
+                
+                # 如果双重检查没有发现成交，继续重试
+                result = self.retry_order_with_new_price(order_id, symbol, side, display_name)
+                # 如果是买单且切换了代币，根据返回值决定是否继续
+                if side == "BUY":
+                    if result:
+                        # 返回True表示可以继续尝试买单（代币相同或切换成功）
+                        return True
+                    else:
+                        # 返回False表示买单失败
+                        return False
+                return result
+
+    def retry_order_with_new_price(self, order_id, symbol, side, display_name):
+        """重新获取最新价格并下单，如果失败则尝试更换代币（仅限买单）"""
+        try:
+            # 获取最新价格
+            price_data = self.get_token_price(symbol)
+            if not price_data or 'price' not in price_data:
+                if side == "BUY":
+                    self.log_message(f"{display_name} 无法获取最新价格，尝试更换代币")
+                    return self.switch_to_better_token(symbol, display_name)
+                else:
+                    self.log_message(f"{display_name} 无法获取最新价格，卖单重试失败")
+                    return False
+            
+            latest_price = float(price_data['price'])
+            
+            # 根据订单方向调整价格以提高撮合优先级
+            if side == "BUY":
+                adjusted_price = latest_price + 0.00000001  # 买单价格提高0.00000001
+                self.log_message(f"{display_name} 获取最新价格: {latest_price}，买单调整后价格: {adjusted_price}")
+            else:  # SELL
+                adjusted_price = latest_price - 0.00000001  # 卖单价格降低0.00000001
+                self.log_message(f"{display_name} 获取最新价格: {latest_price}，卖单调整后价格: {adjusted_price}")
+            
+            # 重新下单
+            new_order_id = self.place_single_order(symbol, adjusted_price, side)
+            if new_order_id:
+                # 递归检查新订单状态
+                return self.handle_order_status(symbol, new_order_id, display_name, side)
+            else:
+                if side == "BUY":
+                    self.log_message(f"{display_name} 重新下单失败，尝试更换代币")
+                    return self.switch_to_better_token(symbol, display_name)
+                else:
+                    self.log_message(f"{display_name} 重新下单失败，卖单重试失败")
+                    return False
+                
+        except Exception as e:
+            if side == "BUY":
+                self.log_message(f"重新下单失败: {str(e)}，尝试更换代币")
+                return self.switch_to_better_token(symbol, display_name)
+            else:
+                self.log_message(f"重新下单失败: {str(e)}，卖单重试失败")
+                return False
+
+    def switch_to_better_token(self, current_symbol, current_display_name):
+        """当前代币交易困难时，切换到稳定度更好的代币，并完全替换交易循环"""
+        try:
+            self.log_message(f"{current_display_name} 买单未成功，可能当前代币进入不稳定状态，重新获取稳定度数据并切换代币")
+            
+            # 1. 重新获取稳定度数据
+            stability_data = self.fetch_stability_data()
+            if not stability_data:
+                self.log_message(f"无法获取稳定度数据，15秒后重试")
+                time.sleep(15)
+                return False
+            
+            # 2. 获取除KOGE外稳定度排名第一的代币
+            top_token = self.get_top_stability_token()
+            if not top_token:
+                self.log_message(f"无法获取稳定度排名第一的代币，15秒后重试")
+                time.sleep(15)
+                return False
+            
+            new_symbol = top_token['symbol']
+            new_display_name = top_token['display_name']
+            new_price = top_token['price']
+            stability = top_token['stability']
+            
+            # 3. 检查是否与当前代币相同（比较显示名称）
+            self.log_message(f"比较代币: {new_display_name} == {current_display_name} ? {new_display_name == current_display_name}")
+            if new_display_name == current_display_name:
+                self.log_message(f"稳定度排名第一的代币仍是 {current_display_name}，重新尝试买单")
+                return True  # 返回True表示可以继续尝试买单
+            
+            self.log_message(f"准备切换代币: {current_display_name} -> {new_display_name}")
+            
+            # 4. 更新当前代币信息为新代币信息
+            if current_symbol in self.tokens:
+                self.tokens[current_symbol]['display_name'] = new_display_name
+                self.tokens[current_symbol]['price'] = str(new_price)
+                self.tokens[current_symbol]['stability'] = stability
+                self.tokens[current_symbol]['last_update'] = datetime.now().strftime('%H:%M:%S')
+                self.log_message(f"已更新代币信息: {current_display_name} -> {new_display_name}")
+            
+            self.log_message(f"代币切换完成：{current_display_name} -> {new_display_name}，继续使用新代币进行交易")
+            
+            return True
+            
+        except Exception as e:
+            self.log_message(f"切换代币失败: {str(e)}")
+            import traceback
+            self.log_message(f"异常详情: {traceback.format_exc()}")
+            return False
+
+    def retry_order_with_remaining_qty(self, symbol, side, display_name, remaining_qty):
+        """使用剩余份额重新下单"""
+        try:
+            # 获取最新价格
+            price_data = self.get_token_price(symbol)
+            if not price_data or 'price' not in price_data:
+                self.log_message(f"{display_name} 无法获取最新价格，取消交易")
+                return False
+            
+            latest_price = float(price_data['price'])
+            
+            # 根据订单方向调整价格以提高撮合优先级
+            if side == "BUY":
+                adjusted_price = latest_price + 0.00000001  # 买单价格提高0.00000001
+                self.log_message(f"{display_name} 获取最新价格: {latest_price}，买单调整后价格: {adjusted_price}")
+            else:  # SELL
+                adjusted_price = latest_price - 0.00000001  # 卖单价格降低0.00000001
+                self.log_message(f"{display_name} 获取最新价格: {latest_price}，卖单调整后价格: {adjusted_price}")
+            
+            # 使用剩余份额重新下单
+            new_order_id = self.place_single_order(symbol, adjusted_price, side, custom_quantity=remaining_qty)
+            if new_order_id:
+                # 递归检查新订单状态
+                return self.handle_order_status(symbol, new_order_id, display_name, side)
+            else:
+                return False
+                
+        except Exception as e:
+            self.log_message(f"使用剩余份额重新下单失败: {str(e)}")
+            return False
+
+    def handle_canceled_order(self, symbol, side, display_name, order_id):
+        """处理已取消的订单"""
+        try:
+            # 获取已取消订单的份额信息
+            canceled_order_info = self.get_order_details()
+            if canceled_order_info:
+                orig_qty = float(canceled_order_info.get('origQty', 0))
+                executed_qty = float(canceled_order_info.get('executedQty', 0))
+                remaining_qty = orig_qty - executed_qty
+                
+                self.log_message(f"{display_name} 已取消订单详情:")
+                self.log_message(f"  - 原始数量: {orig_qty}")
+                self.log_message(f"  - 已成交数量: {executed_qty}")
+                self.log_message(f"  - 剩余数量: {remaining_qty}")
+                
+                if remaining_qty > 0:
+                    return self.retry_order_with_remaining_qty(symbol, side, display_name, remaining_qty)
+                else:
+                    self.log_message(f"{display_name} 没有剩余份额需要处理")
+                    return True
+            else:
+                self.log_message(f"{display_name} 无法获取已取消订单详情")
+                result = self.retry_order_with_new_price(order_id, symbol, side, display_name)
+                if side == "BUY":
+                    return result
+                return result
+        except Exception as e:
+            self.log_message(f"{display_name} 处理已取消订单失败: {e}")
+            result = self.retry_order_with_new_price(order_id, symbol, side, display_name)
+            if side == "BUY":
+                return result
+            return result
+
+    def get_order_details(self, order_id=None):
+        """获取订单详细信息（获取最新一条订单）"""
+        try:
+            url = "https://www.binance.com/bapi/defi/v1/public/alpha-trade/get-order-history-web"
+            params = {
+                'rows': 1,
+                'orderStatus': 'FILLED,PARTIALLY_FILLED,EXPIRED,CANCELED,REJECTED',
+            }
+            
+            # 构建请求头
+            headers = {
+                'Accept': '*/*',
+                'Accept-Language': 'zh-CN,zh;q=0.9',
+                'Content-Type': 'application/json',
+                'csrftoken': self.csrf_token,
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+            }
+            
+            response = requests.get(url, params=params, headers=headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get('code') == '000000' and data.get('data') and len(data['data']) > 0:
+                return data['data'][0]
+            else:
+                self.log_message(f"获取订单详情失败: {data.get('message', '未知错误')}")
+                self.log_message(f"响应数据: {data}")
+                return None
+                
+        except Exception as e:
+            self.log_message(f"获取订单详情异常: {str(e)}")
+            # 添加响应数据日志
+            try:
+                if 'response' in locals():
+                    self.log_message(f"响应状态码: {response.status_code}")
+                    self.log_message(f"响应内容: {response.text}")
+            except:
+                pass
+            return None
+
+    def log_trade_detail(self, trade_detail):
+        """记录交易详情到文件"""
+        try:
+            # 创建日期目录
+            date_str = datetime.now().strftime('%Y-%m-%d')
+            date_dir = os.path.join(self.log_dir, date_str)
+            if not os.path.exists(date_dir):
+                os.makedirs(date_dir)
+            
+            # 交易详情日志文件路径
+            trade_log_file = os.path.join(date_dir, "trade_detail_log.txt")
+            with open(trade_log_file, 'a', encoding='utf-8') as f:
+                f.write(f"\n{'=' * 80}\n")
+                f.write(f"时间: {trade_detail['timestamp']}\n")
+                f.write(f"代币: {trade_detail['symbol']}\n")
+                f.write(f"方向: {trade_detail['side']}\n")
+                f.write(f"价格: {trade_detail['price']}\n")
+                f.write(f"自定义数量: {trade_detail.get('custom_quantity', 'None')}\n")
+                f.write(f"状态: {trade_detail['status']}\n")
+                
+                if 'order_id' in trade_detail:
+                    f.write(f"订单ID: {trade_detail['order_id']}\n")
+                
+                if 'error' in trade_detail:
+                    f.write(f"错误信息: {trade_detail['error']}\n")
+                
+                if 'request_params' in trade_detail:
+                    f.write(f"请求参数:\n")
+                    f.write(f"  URL: {trade_detail['request_params']['url']}\n")
+                    f.write(f"  Payload: {json.dumps(trade_detail['request_params']['payload'], indent=2, ensure_ascii=False)}\n")
+                
+                if 'response' in trade_detail:
+                    f.write(f"响应信息:\n")
+                    f.write(f"  状态码: {trade_detail['response']['status_code']}\n")
+                    if 'json' in trade_detail['response']:
+                        f.write(f"  响应数据: {json.dumps(trade_detail['response']['json'], indent=2, ensure_ascii=False)}\n")
+                    else:
+                        f.write(f"  响应文本: {trade_detail['response']['text']}\n")
+                
+                f.write(f"{'=' * 80}\n")
+        except Exception as e:
+            print(f"写入交易详情失败: {e}")
 
 def main():
     """主函数"""
