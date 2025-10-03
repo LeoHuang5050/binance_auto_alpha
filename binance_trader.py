@@ -1457,12 +1457,10 @@ class BinanceTrader:
                 completed_trades += 1
                 self.log_message(f"4倍交易完成 {completed_trades}/{trading_count}")
                 
-                # 如果不是最后一次交易，才等待
-                if completed_trades < trading_count:
-                    # 交易间隔 - 每次交易完成后都等待10-15秒
-                    wait_time = random.uniform(10, 15)
-                    self.log_message(f"等待 {wait_time:.1f} 秒后获取下一个稳定高倍代币...")
-                    time.sleep(wait_time)
+                # 交易间隔 - 每次交易完成后都等待10-15秒
+                wait_time = random.uniform(10, 15)
+                self.log_message(f"等待 {wait_time:.1f} 秒后获取下一个稳定高倍代币...")
+                time.sleep(wait_time)
                     
             except Exception as e:
                 self.log_message(f"4倍自动交易异常: {str(e)}")
@@ -2267,6 +2265,12 @@ class BinanceTrader:
                 completed_trades += 1
                 self.log_message(f"{display_name} 第 {completed_trades} 次买卖完成")
                 
+                # 清空累计的买单份额（买卖完成一轮后重置）
+                if symbol in self.tokens:
+                    previous_quantity = self.tokens[symbol].get('last_buy_quantity', 0.0)
+                    self.tokens[symbol]['last_buy_quantity'] = 0.0
+                    self.log_message(f"清空累计买单份额: {previous_quantity} -> 0.0")
+                
                 # 更新成交额
                 self.update_trade_amount(symbol, sell_price_adjusted)
                 
@@ -2873,6 +2877,13 @@ class BinanceTrader:
                         self.log_message(f"  - 剩余数量: {remaining_qty}")
                         
                         if remaining_qty > 0:
+                            # 只有部分成交才累计已成交的份额
+                            if side == "BUY" and symbol in self.tokens:
+                                current_quantity = self.tokens[symbol].get('last_buy_quantity', 0.0)
+                                new_total_quantity = current_quantity + executed_qty
+                                self.tokens[symbol]['last_buy_quantity'] = new_total_quantity
+                                self.log_message(f"累计部分成交份额: {current_quantity} + {executed_qty} = {new_total_quantity}")
+                            
                             return self.retry_order_with_remaining_qty(symbol, side, display_name, remaining_qty)
                         else:
                             self.log_message(f"{display_name} 没有剩余份额需要处理")
@@ -2949,6 +2960,13 @@ class BinanceTrader:
             price_data = self.get_token_price(symbol)
             if not price_data or 'price' not in price_data:
                 if side == "BUY":
+                    # 检查是否有部分成交的份额，如果有则不切换代币
+                    if symbol in self.tokens:
+                        current_quantity = self.tokens[symbol].get('last_buy_quantity', 0.0)
+                        if current_quantity > 0:
+                            self.log_message(f"{display_name} 检测到部分成交份额 {current_quantity}，不切换代币")
+                            return False  # 不切换代币，返回False表示重试失败但不切换
+                    
                     self.log_message(f"{display_name} 无法获取最新价格，尝试更换代币")
                     return self.switch_to_better_token(symbol, display_name)
                 else:
@@ -2972,6 +2990,13 @@ class BinanceTrader:
                 return self.handle_order_status(symbol, new_order_id, display_name, side)
             else:
                 if side == "BUY":
+                    # 检查是否有部分成交的份额，如果有则不切换代币
+                    if symbol in self.tokens:
+                        current_quantity = self.tokens[symbol].get('last_buy_quantity', 0.0)
+                        if current_quantity > 0:
+                            self.log_message(f"{display_name} 检测到部分成交份额 {current_quantity}，不切换代币")
+                            return False  # 不切换代币，返回False表示重试失败但不切换
+                    
                     self.log_message(f"{display_name} 重新下单失败，尝试更换代币")
                     return self.switch_to_better_token(symbol, display_name)
                 else:
@@ -2980,6 +3005,13 @@ class BinanceTrader:
                 
         except Exception as e:
             if side == "BUY":
+                # 检查是否有部分成交的份额，如果有则不切换代币
+                if symbol in self.tokens:
+                    current_quantity = self.tokens[symbol].get('last_buy_quantity', 0.0)
+                    if current_quantity > 0:
+                        self.log_message(f"{display_name} 检测到部分成交份额 {current_quantity}，不切换代币")
+                        return False  # 不切换代币，返回False表示重试失败但不切换
+                
                 self.log_message(f"重新下单失败: {str(e)}，尝试更换代币")
                 return self.switch_to_better_token(symbol, display_name)
             else:
@@ -3103,19 +3135,55 @@ class BinanceTrader:
     def get_order_details(self, order_id=None):
         """获取订单详细信息（获取最新一条订单）"""
         try:
-            url = "https://www.binance.com/bapi/defi/v1/public/alpha-trade/get-order-history-web"
+            # 使用private API，需要时间范围参数
+            from datetime import datetime, timedelta
+            
+            # 获取今天的时间范围
+            today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            tomorrow_start = today + timedelta(days=1)
+            
+            start_time = int(today.timestamp() * 1000)
+            end_time = int(tomorrow_start.timestamp() * 1000)
+            
+            url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/get-order-history-web"
             params = {
-                'rows': 1,
+                'page': 1,
+                'rows': 1,  # 只获取最新1条订单
                 'orderStatus': 'FILLED,PARTIALLY_FILLED,EXPIRED,CANCELED,REJECTED',
+                'startTime': start_time,
+                'endTime': end_time
             }
             
             # 构建请求头
             headers = {
                 'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
                 'Accept-Language': 'zh-CN,zh;q=0.9',
+                'Bnc-Level': '0',
+                'Bnc-Location': 'CN',
+                'Bnc-Time-Zone': 'Asia/Shanghai',
+                'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
+                'Clienttype': 'web',
                 'Content-Type': 'application/json',
+                'Cookie': self.cookie,
                 'csrftoken': self.csrf_token,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+                'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQyMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
+                'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
+                'fvideo-token': 'r4R1qH50iUiBSvkPxnk29hGEzOdVdsdK1PoVlT6ffvZ/MjoWsgdF2PVAMzhjjqaaYN8uQUjZfwbLIYLnvjaK+0JsjNR4eNpSUmddjCkrKVAbcD6VKcogkjBEGbgOoQrBIbaKP1/QYanSSqlXpTal5hQExJnFU0EwVWLUSs0Zr8PYXnzgfSaRTxbPy91QYSeYo=3b',
+                'If-None-Match': 'W/"0fc5ed125198498515f07cb35f0655bb7"',
+                'lang': 'zh-CN',
+                'Priority': 'u=1, i',
+                'Referer': 'https://www.binance.com/zh-CN/my/wallet/alpha',
+                'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
+                'Sec-Ch-Ua-Mobile': '?0',
+                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Fetch-Dest': 'empty',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-origin',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+                'X-Passthrough-Token': '',
+                'X-Trace-Id': '14b00354-0504-4a31-a7c9-6206fcbda5cb',
+                'X-Ui-Request-Trace': '14b00354-0504-4a31-a7c9-6206fcbda5cb'
             }
             
             response = requests.get(url, params=params, headers=headers, timeout=10)
