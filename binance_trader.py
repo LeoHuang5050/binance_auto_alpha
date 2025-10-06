@@ -76,6 +76,9 @@ class BinanceTrader:
         self.trading_4x_active = False  # 4倍自动交易是否激活
         self.trading_4x_thread = None  # 4倍自动交易线程
         
+        # 交易成功标识
+        self.trade_success_flag = True  # 标识当前交易是否成功
+        
         # 存储输入框和按钮的引用
         
         # 加载ALPHA代币ID映射
@@ -1453,13 +1456,20 @@ class BinanceTrader:
                 # 等待单次交易完成
                 self.wait_for_single_trade_completion(symbol)
                 
-                # 交易完成后计数
-                completed_trades += 1
-                self.log_message(f"4倍交易完成 {completed_trades}/{trading_count}")
+                # 只有交易成功才计数
+                if self.trade_success_flag:
+                    completed_trades += 1
+                    self.log_message(f"4倍交易完成 {completed_trades}/{trading_count}")
+                else:
+                    self.log_message(f"4倍交易失败，不计入完成次数")
+                
+                # 重置交易成功标识
+                self.trade_success_flag = True
                 
                 # 交易间隔 - 每次交易完成后都等待10-15秒
                 wait_time = random.uniform(10, 15)
-                self.log_message(f"等待 {wait_time:.1f} 秒后获取下一个稳定高倍代币...")
+                if completed_trades < trading_count:
+                    self.log_message(f"等待 {wait_time:.1f} 秒后获取下一个稳定高倍代币...")
                 time.sleep(wait_time)
                     
             except Exception as e:
@@ -2223,6 +2233,7 @@ class BinanceTrader:
                 
                 # 如果买单失败，跳出外层循环
                 if not buy_filled:
+                    self.trade_success_flag = False  # 设置交易失败标识
                     self.log_message(f"{display_name} 买单失败，退出交易循环")
                     break
                 
@@ -2482,10 +2493,7 @@ class BinanceTrader:
                     trade_detail['status'] = 'success'
                     trade_detail['order_id'] = data['data']
                     
-                    # 买单成功后立即保存份额
-                    if side == "BUY" and symbol in self.tokens:
-                        self.tokens[symbol]['last_buy_quantity'] = working_quantity_formatted
-                        self.log_message(f"已保存买单份额: {working_quantity_formatted}")
+                    # 注意：这里不保存份额，只有成交时才保存
 
                     # 记录交易详情到文件
                     self.log_trade_detail(trade_detail)
@@ -2826,6 +2834,18 @@ class BinanceTrader:
 
         if order_status == "FILLED":
             self.log_message(f"{display_name} {side}单已成交")
+            # 买单成交时保存份额
+            if side == "BUY" and symbol in self.tokens:
+                # 获取订单详情来计算成交数量
+                order_details = self.get_order_details()
+                if order_details:
+                    executed_qty = float(order_details.get('executedQty', 0))
+                    current_quantity = self.tokens[symbol].get('last_buy_quantity', 0.0)
+                    new_total_quantity = current_quantity + executed_qty
+                    self.tokens[symbol]['last_buy_quantity'] = new_total_quantity
+                    self.log_message(f"买单成交，保存份额: {current_quantity} + {executed_qty} = {new_total_quantity}")
+                else:
+                    self.log_message(f"无法获取订单详情，跳过保存份额")
             return True
         elif order_status == "PARTIALLY_FILLED":
             self.log_message(f"{display_name} {side}单部分成交，开始处理剩余份额")
