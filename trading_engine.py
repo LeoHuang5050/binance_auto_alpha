@@ -1,0 +1,357 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+交易引擎模块
+Trading Engine Module for Binance Auto Trade System
+"""
+
+import time
+import random
+import threading
+from datetime import datetime
+from tkinter import messagebox
+
+
+class TradingEngine:
+    """交易引擎类 - 负责自动交易逻辑"""
+    
+    def __init__(self, trader):
+        """
+        初始化交易引擎
+        
+        Args:
+            trader: BinanceTrader实例
+        """
+        self.trader = trader
+        # 直接引用API实例，避免跨模块调用
+        self.api = trader.api
+    
+    def place_single_order(self, symbol, price, side, custom_quantity=None):
+        """
+        创建单向订单（买单或卖单）
+        
+        Args:
+            symbol: 交易对符号
+            price: 价格
+            side: 交易方向 (BUY/SELL)
+            custom_quantity: 自定义数量（可选）
+            
+        Returns:
+            str: 订单ID，失败返回None
+        """
+        # 获取上一个买单份额（用于卖单）
+        last_buy_quantity = 0
+        if side == "SELL" and symbol in self.trader.tokens:
+            last_buy_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0)
+        
+        # 直接调用API模块下单
+        return self.api.place_single_order(symbol, price, side, custom_quantity, last_buy_quantity)
+    
+    def run_4x_trading(self, trading_count):
+        """
+        运行4倍自动交易
+        
+        Args:
+            trading_count: 交易次数
+        """
+        completed_trades = 0
+        
+        while self.trader.trading_4x_active and completed_trades < trading_count:
+            try:
+                # 获取稳定度排名第一的代币
+                top_token = self.trader.alpha123_client.get_top_stability_token()
+                
+                if not top_token:
+                    self.trader.log_message("当前没有稳定高倍代币，等待15秒")
+                    time.sleep(15)
+                    continue
+                
+                symbol = top_token['symbol']
+                display_name = top_token['display_name']
+                price = top_token['price']
+                stability = top_token['stability']
+                
+                self.trader.log_message(f"选择代币: {display_name} ({symbol})，稳定度: {stability}，价格: ${price}")
+                
+                # 执行一次买卖交易 - 直接调用toggle_auto_trading方法
+                # 临时设置代币到tokens中
+                if symbol not in self.trader.tokens:
+                    self.trader.tokens[symbol] = {
+                        'price': price,
+                        'last_update': datetime.now(),
+                        'display_name': display_name,
+                        'trade_count': 1,
+                        'trade_amount': 0.0,
+                        'auto_trading': False,
+                        'change_24h': 0.0,
+                        'last_buy_quantity': 0.0,  # 存储上一个买单的份额
+                        'last_buy_amount': 0.0,  # 存储上一个买单的成交额
+                        'last_sell_amount': 0.0  # 存储上一个卖单的成交额
+                    }
+                
+                # 调用toggle_auto_trading开始单次交易
+                self.toggle_auto_trading(symbol, single_trade=True)
+                
+                # 等待单次交易完成
+                self.wait_for_single_trade_completion(symbol)
+                
+                # 只有交易成功才计数
+                if self.trader.trade_success_flag:
+                    completed_trades += 1
+                    self.trader.log_message(f"4倍交易完成 {completed_trades}/{trading_count}")
+                    
+                    # 计算本次买卖的损耗（买单成交额 - 卖单成交额）
+                    if symbol in self.trader.tokens:
+                        last_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
+                        last_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                        
+                        if last_buy_amount > 0 and last_sell_amount > 0:
+                            trade_loss = last_buy_amount - last_sell_amount
+                            self.trader.daily_trade_loss += trade_loss
+                            self.trader.log_message(f"4倍交易损耗: 买入 {last_buy_amount:.2f} USDT - 卖出 {last_sell_amount:.2f} USDT = 损耗 {trade_loss:.2f} USDT，累计损耗: {self.trader.daily_trade_loss:.2f} USDT")
+                            
+                            # 保存配置并更新损耗显示
+                            self.trader.save_config()
+                            self.trader.root.after(0, self.trader.update_daily_loss_display)
+                    
+                    # 重置当前卖单成交额
+                    self.trader.current_sell_amount = 0.0
+                else:
+                    self.trader.log_message(f"4倍交易失败，不计入完成次数")
+                
+                # 重置交易成功标识
+                self.trader.trade_success_flag = True
+                
+                # 交易间隔 - 每次交易完成后都等待10-15秒
+                wait_time = random.uniform(10, 15)
+                if completed_trades < trading_count:
+                    self.trader.log_message(f"等待 {wait_time:.1f} 秒后获取下一个稳定高倍代币...")
+                time.sleep(wait_time)
+                    
+            except Exception as e:
+                self.trader.log_message(f"4倍自动交易异常: {str(e)}")
+                time.sleep(5)
+        
+        # 交易完成
+        self.trader.trading_4x_active = False
+        self.trader.root.after(0, lambda: self.trader.trading_4x_btn.config(text="4倍自动交易", bg='#27ae60'))
+        self.trader.log_message(f"4倍自动交易完成，共完成 {completed_trades} 次交易")
+    
+    def wait_for_single_trade_completion(self, symbol):
+        """
+        等待单次交易完成
+        
+        Args:
+            symbol: 交易对符号
+        """
+        # 等待自动交易状态变为False（表示交易完成）
+        while self.trader.auto_trading.get(symbol, False):
+            time.sleep(1)
+    
+    def toggle_auto_trading(self, symbol, single_trade=False):
+        """
+        切换自动交易状态
+        
+        Args:
+            symbol: 交易对符号
+            single_trade: 是否单次交易
+        """
+        display_name = self.trader.tokens[symbol].get('display_name', symbol)
+        
+        # 添加调试信息
+        current_status = self.trader.auto_trading.get(symbol, False)
+        self.trader.log_message(f"[DEBUG] {display_name} toggle_auto_trading 被调用，当前状态: {current_status}，单次交易: {single_trade}")
+        
+        if symbol in self.trader.auto_trading and self.trader.auto_trading[symbol]:
+            # 停止自动交易
+            self.trader.auto_trading[symbol] = False
+            self.trader.tokens[symbol]['auto_trading'] = False
+            if symbol in self.trader.trading_threads:
+                # 这里可以添加停止线程的逻辑
+                pass
+            self.trader.log_message(f"{display_name} 自动交易已停止")
+            
+            # 更新表格显示
+            self.trader.update_tree_view()
+        else:
+            # 开始自动交易
+            if not self.trader.csrf_token or not self.trader.cookie:
+                messagebox.showerror("错误", "请先设置认证信息")
+                return
+            
+            self.trader.auto_trading[symbol] = True
+            self.trader.tokens[symbol]['auto_trading'] = True
+            
+            # 如果是单次交易，设置trade_count为1
+            if single_trade:
+                self.trader.tokens[symbol]['trade_count'] = 1
+            
+            # 启动自动交易线程
+            thread = threading.Thread(target=self.auto_trade_worker, args=(symbol,), daemon=True)
+            self.trader.trading_threads[symbol] = thread
+            thread.start()
+            
+            self.trader.log_message(f"{display_name} 自动交易已开始")
+            
+            # 更新表格显示
+            self.trader.update_tree_view()
+    
+    def auto_trade_worker(self, symbol):
+        """
+        自动交易工作线程 - 单向交易模式
+        
+        Args:
+            symbol: 交易对符号
+        """
+        trade_count = self.trader.tokens[symbol].get('trade_count', 1)
+        completed_trades = 0
+        display_name = self.trader.tokens[symbol].get('display_name', symbol)
+        
+        self.trader.log_message(f"{display_name} 开始自动交易，目标次数: {trade_count}")
+        
+        # 开始自动交易
+        while self.trader.auto_trading.get(symbol, False) and completed_trades < trade_count:
+            try:
+                # 添加调试信息
+                self.trader.log_message(f"[DEBUG] {display_name} 进入交易循环，auto_trading状态: {self.trader.auto_trading.get(symbol, False)}")
+                
+                # 1. 获取价格
+                price_data = self.trader.get_token_price(symbol)
+                if not price_data:
+                    self.trader.log_message(f"{display_name} 获取价格失败，等待1秒后重试")
+                    time.sleep(random.uniform(0, 1))
+                    continue
+                
+                current_price = float(price_data['price'])
+                
+                # 2. 下买单（重试机制，最多5次）- 使用最新价格+0.00000001提高撮合优先级
+                buy_order_id = None
+                buy_retry_count = 0
+                max_buy_retries = 5
+                
+                while self.trader.auto_trading.get(symbol, False) and not buy_order_id and buy_retry_count < max_buy_retries:
+                    buy_price = current_price + 0.00000001  # 买单价格提高0.00000001
+                    # buy_order_id = self.place_single_order(symbol, buy_price, "BUY")
+                    buy_order_id = None
+                    
+                    if not buy_order_id:
+                        buy_retry_count += 1
+                        self.trader.log_message(f"{display_name} 买单下单失败（{buy_retry_count}/{max_buy_retries}），等待1秒后重试")
+                        
+                        if buy_retry_count >= max_buy_retries:
+                            self.trader.log_message(f"{display_name} 买单下单失败{max_buy_retries}次，退出当前交易循环")
+                            self.trader.trade_success_flag = False
+                            break
+                        
+                        time.sleep(random.uniform(0, 1))
+                        # 重新获取价格
+                        price_data = self.trader.get_token_price(symbol)
+                        if price_data:
+                            current_price = float(price_data['price'])
+                
+                # 如果买单下单失败，跳出外层循环
+                if not buy_order_id:
+                    break
+                
+                # 如果自动交易被停止，跳出外层循环
+                if not self.trader.auto_trading.get(symbol, False):
+                    break
+                
+                self.trader.log_message(f"{display_name} 买单下单成功，order_id: {buy_order_id}，价格为: {buy_price}")
+                
+                # 3. 等待买单成交（使用递归方法处理）
+                self.trader.log_message(f"[DEBUG] {display_name} 开始等待买单成交，auto_trading状态: {self.trader.auto_trading.get(symbol, False)}")
+                buy_filled = self.trader.order_handler.handle_order_status(symbol, buy_order_id, display_name, "BUY")
+                
+                # 如果自动交易被停止，跳出外层循环
+                if not self.trader.auto_trading.get(symbol, False):
+                    self.trader.log_message(f"{display_name} 自动交易已停止，退出交易循环")
+                    break
+                
+                # 如果买单失败，跳出外层循环
+                if not buy_filled:
+                    self.trader.trade_success_flag = False  # 设置交易失败标识
+                    self.trader.log_message(f"{display_name} 买单失败，退出交易循环")
+                    break
+                
+                # 4. 获取最新价格
+                price_data = self.trader.get_token_price(symbol)
+                if not price_data:
+                    self.trader.log_message(f"{display_name} 获取最新价格失败，等待1秒后重试")
+                    time.sleep(random.uniform(0, 1))
+                    continue
+                
+                sell_price = float(price_data['price'])
+                
+                # 5. 下卖单（无限重试）- 使用最新价格-0.00000001提高撮合优先级
+                # 重要：买单已成交，必须确保卖出，否则资金被占用无法进行下一次交易
+                sell_order_id = None
+                sell_retry_count = 0
+                
+                while self.trader.auto_trading.get(symbol, False) and not sell_order_id:
+                    sell_price_adjusted = sell_price - 0.00000001  # 卖单价格降低0.00000001
+                    sell_order_id = self.place_single_order(symbol, sell_price_adjusted, "SELL")
+                    
+                    if not sell_order_id:
+                        sell_retry_count += 1
+                        self.trader.log_message(f"{display_name} 卖单下单失败（第{sell_retry_count}次），等待1秒后重试")
+                        
+                        # 每10次失败记录一次警告
+                        if sell_retry_count % 10 == 0:
+                            self.trader.log_message(f"{display_name} 警告：卖单已重试{sell_retry_count}次仍未成功，继续重试...")
+                        
+                        time.sleep(random.uniform(0, 1))
+                        # 重新获取最新价格
+                        price_data = self.trader.get_token_price(symbol)
+                        if price_data:
+                            sell_price = float(price_data['price'])
+                        else:
+                            # 如果无法获取价格，等待更长时间后重试
+                            self.trader.log_message(f"{display_name} 无法获取价格，等待5秒后重试")
+                            time.sleep(5)
+                
+                # 如果自动交易被停止，跳出外层循环
+                if not self.trader.auto_trading.get(symbol, False):
+                    break
+                
+                self.trader.log_message(f"{display_name} 卖单下单成功，order_id: {sell_order_id}，价格为: {sell_price_adjusted}")
+                
+                # 6. 等待卖单成交（使用递归方法处理）
+                sell_filled = self.trader.order_handler.handle_order_status(symbol, sell_order_id, display_name, "SELL")
+                
+                # 如果自动交易被停止，跳出外层循环
+                if not self.trader.auto_trading.get(symbol, False):
+                    break
+                
+                # 一次买卖完成
+                completed_trades += 1
+                self.trader.log_message(f"{display_name} 第 {completed_trades} 次买卖完成")
+                
+                # 清空累计的买单和卖单数据（买卖完成一轮后重置）
+                if symbol in self.trader.tokens:
+                    previous_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                    previous_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
+                    previous_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                    
+                    self.trader.tokens[symbol]['last_buy_quantity'] = 0.0
+                    self.trader.tokens[symbol]['last_buy_amount'] = 0.0
+                    self.trader.tokens[symbol]['last_sell_amount'] = 0.0
+                    
+                    self.trader.log_message(f"清空累计交易数据: 买单份额 {previous_quantity} -> 0.0, 买单成交额 {previous_buy_amount:.2f} -> 0.0 USDT, 卖单成交额 {previous_sell_amount:.2f} -> 0.0 USDT")
+                
+                # 更新成交额
+                self.trader.update_trade_amount(symbol, sell_price_adjusted)
+                
+            except Exception as e:
+                self.trader.log_message(f"{display_name} 自动交易出错: {str(e)}")
+                time.sleep(random.uniform(0, 1))
+        
+        # 交易完成
+        self.trader.auto_trading[symbol] = False
+        self.trader.tokens[symbol]['auto_trading'] = False
+        
+        # 更新表格显示
+        self.trader.root.after(0, lambda: self.trader.update_tree_view())
+        
+        self.trader.log_message(f"{display_name} 自动交易完成，共完成 {completed_trades} 次交易")
+
