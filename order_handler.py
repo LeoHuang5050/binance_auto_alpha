@@ -105,6 +105,39 @@ class OrderHandler:
                     new_status = self.api.check_single_order_filled(order_id)
                     if new_status == "FILLED":
                         self.trader.log_message(f"{display_name} 第{i+1}次查询：{side}单已完全成交")
+                        
+                        # 获取订单详情并保存份额和成交额
+                        order_details = self.api.get_order_details()
+                        if order_details:
+                            if side == "BUY" and symbol in self.trader.tokens:
+                                executed_qty = float(order_details.get('executedQty', 0))
+                                cum_quote = float(order_details.get('cumQuote', '0'))
+                                
+                                # 保存买单份额
+                                current_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                                new_total_quantity = current_quantity + executed_qty
+                                self.trader.tokens[symbol]['last_buy_quantity'] = new_total_quantity
+                                
+                                # 保存买单成交额
+                                current_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
+                                new_total_amount = current_buy_amount + cum_quote
+                                self.trader.tokens[symbol]['last_buy_amount'] = new_total_amount
+                                
+                                self.trader.log_message(f"买单完全成交，保存份额: {current_quantity} + {executed_qty} = {new_total_quantity}，保存成交额: {current_buy_amount:.2f} + {cum_quote:.2f} = {new_total_amount:.2f} USDT")
+                            elif side == "SELL" and symbol in self.trader.tokens:
+                                executed_qty = float(order_details.get('executedQty', 0))
+                                cum_quote = float(order_details.get('cumQuote', '0'))
+                                
+                                # 累计卖单成交额
+                                current_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                                new_total_sell_amount = current_sell_amount + cum_quote
+                                self.trader.tokens[symbol]['last_sell_amount'] = new_total_sell_amount
+                                
+                                # 同时累计到全局变量（用于兼容性）
+                                self.trader.current_sell_amount += cum_quote
+                                
+                                self.trader.log_message(f"卖单完全成交，保存成交额: {current_sell_amount:.2f} + {cum_quote:.2f} = {new_total_sell_amount:.2f} USDT")
+                        
                         return True
                     elif new_status != "PARTIALLY_FILLED":
                         self.trader.log_message(f"{display_name} 第{i+1}次查询：{side}单状态变为 {new_status}")
@@ -128,6 +161,39 @@ class OrderHandler:
                 
                 if final_status == "FILLED":
                     self.trader.log_message(f"{display_name} 取消后{side}单已完全成交")
+                    
+                    # 获取订单详情并保存份额和成交额
+                    order_details = self.api.get_order_details()
+                    if order_details:
+                        if side == "BUY" and symbol in self.trader.tokens:
+                            executed_qty = float(order_details.get('executedQty', 0))
+                            cum_quote = float(order_details.get('cumQuote', '0'))
+                            
+                            # 保存买单份额
+                            current_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                            new_total_quantity = current_quantity + executed_qty
+                            self.trader.tokens[symbol]['last_buy_quantity'] = new_total_quantity
+                            
+                            # 保存买单成交额
+                            current_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
+                            new_total_amount = current_buy_amount + cum_quote
+                            self.trader.tokens[symbol]['last_buy_amount'] = new_total_amount
+                            
+                            self.trader.log_message(f"取消后买单已完全成交，保存份额: {current_quantity} + {executed_qty} = {new_total_quantity}，保存成交额: {current_buy_amount:.2f} + {cum_quote:.2f} = {new_total_amount:.2f} USDT")
+                        elif side == "SELL" and symbol in self.trader.tokens:
+                            executed_qty = float(order_details.get('executedQty', 0))
+                            cum_quote = float(order_details.get('cumQuote', '0'))
+                            
+                            # 累计卖单成交额
+                            current_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                            new_total_sell_amount = current_sell_amount + cum_quote
+                            self.trader.tokens[symbol]['last_sell_amount'] = new_total_sell_amount
+                            
+                            # 同时累计到全局变量（用于兼容性）
+                            self.trader.current_sell_amount += cum_quote
+                            
+                            self.trader.log_message(f"取消后卖单已完全成交，保存成交额: {current_sell_amount:.2f} + {cum_quote:.2f} = {new_total_sell_amount:.2f} USDT")
+                    
                     return True
                 elif final_status == "CANCELED":
                     # 获取已取消订单的份额信息
@@ -157,6 +223,24 @@ class OrderHandler:
                                 self.trader.tokens[symbol]['last_buy_amount'] = new_total_amount
                                 
                                 self.trader.log_message(f"累计部分成交份额: {current_quantity} + {executed_qty} = {new_total_quantity}，累计买单成交额: {current_buy_amount:.2f} + {cum_quote:.2f} = {new_total_amount:.2f} USDT")
+                            
+                            elif side == "SELL" and symbol in self.trader.tokens:
+                                # 累计卖单成交额
+                                cum_quote = float(canceled_order_info.get('cumQuote', '0'))
+                                current_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                                new_total_sell_amount = current_sell_amount + cum_quote
+                                self.trader.tokens[symbol]['last_sell_amount'] = new_total_sell_amount
+                                
+                                # 同时累计到全局变量（用于兼容性）
+                                self.trader.current_sell_amount += cum_quote
+                                
+                                # 更新剩余份额：减去已成交的份额
+                                current_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                                new_quantity = current_quantity - executed_qty
+                                self.trader.tokens[symbol]['last_buy_quantity'] = new_quantity
+                                
+                                self.trader.log_message(f"累计卖单部分成交额: {current_sell_amount:.2f} + {cum_quote:.2f} = {new_total_sell_amount:.2f} USDT")
+                                self.trader.log_message(f"更新剩余份额: {current_quantity} - {executed_qty} = {new_quantity}")
                             
                             return self.retry_order_with_remaining_qty(symbol, side, display_name, remaining_qty)
                         else:
@@ -197,9 +281,131 @@ class OrderHandler:
                     
                     if final_status == 'FILLED':
                         self.trader.log_message(f"{display_name} Double check: {side}单已成交，继续流程")
+                        
+                        # 获取订单详情并保存份额和成交额
+                        order_details = self.api.get_order_details()
+                        if order_details:
+                            if side == "BUY" and symbol in self.trader.tokens:
+                                executed_qty = float(order_details.get('executedQty', 0))
+                                cum_quote = float(order_details.get('cumQuote', '0'))
+                                
+                                # 保存买单份额
+                                current_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                                new_total_quantity = current_quantity + executed_qty
+                                self.trader.tokens[symbol]['last_buy_quantity'] = new_total_quantity
+                                
+                                # 保存买单成交额
+                                current_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
+                                new_total_amount = current_buy_amount + cum_quote
+                                self.trader.tokens[symbol]['last_buy_amount'] = new_total_amount
+                                
+                                self.trader.log_message(f"Double check: 买单已成交，保存份额: {current_quantity} + {executed_qty} = {new_total_quantity}，保存成交额: {current_buy_amount:.2f} + {cum_quote:.2f} = {new_total_amount:.2f} USDT")
+                            elif side == "SELL" and symbol in self.trader.tokens:
+                                executed_qty = float(order_details.get('executedQty', 0))
+                                cum_quote = float(order_details.get('cumQuote', '0'))
+                                
+                                # 累计卖单成交额
+                                current_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                                new_total_sell_amount = current_sell_amount + cum_quote
+                                self.trader.tokens[symbol]['last_sell_amount'] = new_total_sell_amount
+                                
+                                # 同时累计到全局变量（用于兼容性）
+                                self.trader.current_sell_amount += cum_quote
+                                
+                                self.trader.log_message(f"Double check: 卖单已成交，保存成交额: {current_sell_amount:.2f} + {cum_quote:.2f} = {new_total_sell_amount:.2f} USDT")
+                        
                         return True
+                    elif final_status == 'CANCELED':
+                        # 买单被取消，检查是否有部分成交
+                        if side == "BUY":
+                            canceled_order_info = self.api.get_order_details()
+                            if canceled_order_info:
+                                orig_qty = float(canceled_order_info.get('origQty', 0))
+                                executed_qty = float(canceled_order_info.get('executedQty', 0))
+                                cum_quote = float(canceled_order_info.get('cumQuote', '0'))
+                                remaining_qty = orig_qty - executed_qty
+                                
+                                self.trader.log_message(f"{display_name} Double check: 买单已取消订单详情:")
+                                self.trader.log_message(f"  - 原始数量: {orig_qty}")
+                                self.trader.log_message(f"  - 已成交数量: {executed_qty}")
+                                self.trader.log_message(f"  - 成交金额: {cum_quote:.2f} USDT")
+                                self.trader.log_message(f"  - 剩余数量: {remaining_qty}")
+                                
+                                # 如果有部分成交，累计已成交的份额和成交额
+                                if executed_qty > 0 and cum_quote > 0:
+                                    if symbol in self.trader.tokens:
+                                        # 累计买单份额
+                                        current_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                                        new_total_quantity = current_quantity + executed_qty
+                                        self.trader.tokens[symbol]['last_buy_quantity'] = new_total_quantity
+                                        
+                                        # 累计买单成交额
+                                        current_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
+                                        new_total_amount = current_buy_amount + cum_quote
+                                        self.trader.tokens[symbol]['last_buy_amount'] = new_total_amount
+                                        
+                                        self.trader.log_message(f"累计部分成交份额: {current_quantity} + {executed_qty} = {new_total_quantity}，累计买单成交额: {current_buy_amount:.2f} + {cum_quote:.2f} = {new_total_amount:.2f} USDT")
+                                    
+                                    # 如果有剩余数量，继续重试
+                                    if remaining_qty > 0:
+                                        self.trader.log_message(f"{display_name} 检测到部分成交，继续重试剩余数量: {remaining_qty}")
+                                        return self.retry_order_with_remaining_qty(symbol, side, display_name, remaining_qty)
+                                    else:
+                                        self.trader.log_message(f"{display_name} 所有份额已成交，继续流程")
+                                        return True
+                                else:
+                                    # 没有部分成交，退出当前交易循环
+                                    self.trader.log_message(f"{display_name} Double check: 买单状态为 {final_status}，5次查询后仍未成交，退出当前交易循环")
+                                    return False
+                            else:
+                                self.trader.log_message(f"{display_name} Double check: 无法获取订单详情，退出当前交易循环")
+                                return False
+                        else:
+                            # 卖单被取消，检查是否有部分成交
+                            canceled_order_info = self.api.get_order_details()
+                            if canceled_order_info:
+                                orig_qty = float(canceled_order_info.get('origQty', 0))
+                                executed_qty = float(canceled_order_info.get('executedQty', 0))
+                                cum_quote = float(canceled_order_info.get('cumQuote', '0'))
+                                remaining_qty = orig_qty - executed_qty
+                                
+                                self.trader.log_message(f"{display_name} Double check: 卖单已取消订单详情:")
+                                self.trader.log_message(f"  - 原始数量: {orig_qty}")
+                                self.trader.log_message(f"  - 已成交数量: {executed_qty}")
+                                self.trader.log_message(f"  - 成交金额: {cum_quote:.2f} USDT")
+                                self.trader.log_message(f"  - 剩余数量: {remaining_qty}")
+                                
+                                # 如果有部分成交，累计已成交的成交额，并更新剩余份额
+                                if executed_qty > 0 and cum_quote > 0:
+                                    if symbol in self.trader.tokens:
+                                        # 累计卖单成交额
+                                        current_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                                        new_total_sell_amount = current_sell_amount + cum_quote
+                                        self.trader.tokens[symbol]['last_sell_amount'] = new_total_sell_amount
+                                        
+                                        # 同时累计到全局变量（用于兼容性）
+                                        self.trader.current_sell_amount += cum_quote
+                                        
+                                        # 更新剩余份额：减去已成交的份额
+                                        current_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                                        new_quantity = current_quantity - executed_qty
+                                        self.trader.tokens[symbol]['last_buy_quantity'] = new_quantity
+                                        
+                                        self.trader.log_message(f"累计卖单部分成交额: {current_sell_amount:.2f} + {cum_quote:.2f} = {new_total_sell_amount:.2f} USDT")
+                                        self.trader.log_message(f"更新剩余份额: {current_quantity} - {executed_qty} = {new_quantity}")
+                                    
+                                    # 如果有剩余数量，继续重试
+                                    if remaining_qty > 0:
+                                        self.trader.log_message(f"{display_name} 检测到部分成交，继续重试剩余数量: {remaining_qty}")
+                                        return self.retry_order_with_remaining_qty(symbol, side, display_name, remaining_qty)
+                                    else:
+                                        self.trader.log_message(f"{display_name} 所有份额已成交，继续流程")
+                                        return True
+                            
+                            # 没有部分成交或无法获取订单详情，继续重试
+                            self.trader.log_message(f"{display_name} Double check: 卖单状态为 {final_status}，继续重试")
                     else:
-                        # 买单5次查询后仍未成交，退出当前交易循环
+                        # 其他状态
                         if side == "BUY":
                             self.trader.log_message(f"{display_name} Double check: 买单状态为 {final_status}，5次查询后仍未成交，退出当前交易循环")
                             return False
@@ -254,10 +460,10 @@ class OrderHandler:
             
             # 根据订单方向调整价格以提高撮合优先级
             if side == "BUY":
-                price_data['price'] = latest_price + 0.00000001  # 买单价格提高0.00000001
+                price_data['price'] = latest_price + 0.0000001  # 买单价格提高0.0000001
                 self.trader.log_message(f"{display_name} 获取最新价格: {latest_price}，买单调整后价格: {price_data['price']}")
             else:  # SELL
-                price_data['price'] = latest_price - 0.00000001  # 卖单价格降低0.00000001
+                price_data['price'] = latest_price - 0.0000001  # 卖单价格降低0.0000001
                 self.trader.log_message(f"{display_name} 获取最新价格: {latest_price}，卖单调整后价格: {price_data['price']}")
             
             # 重新下单
@@ -389,6 +595,40 @@ class OrderHandler:
                 self.trader.log_message(f"  - 原始数量: {orig_qty}")
                 self.trader.log_message(f"  - 已成交数量: {executed_qty}")
                 self.trader.log_message(f"  - 剩余数量: {remaining_qty}")
+                
+                # 如果有部分成交，累计已成交的份额和成交额
+                if executed_qty > 0:
+                    cum_quote = float(canceled_order_info.get('cumQuote', '0'))
+                    
+                    if side == "BUY" and symbol in self.trader.tokens:
+                        # 累计买单份额
+                        current_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                        new_total_quantity = current_quantity + executed_qty
+                        self.trader.tokens[symbol]['last_buy_quantity'] = new_total_quantity
+                        
+                        # 累计买单成交额
+                        current_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
+                        new_total_amount = current_buy_amount + cum_quote
+                        self.trader.tokens[symbol]['last_buy_amount'] = new_total_amount
+                        
+                        self.trader.log_message(f"累计部分成交份额: {current_quantity} + {executed_qty} = {new_total_quantity}，累计买单成交额: {current_buy_amount:.2f} + {cum_quote:.2f} = {new_total_amount:.2f} USDT")
+                    
+                    elif side == "SELL" and symbol in self.trader.tokens:
+                        # 累计卖单成交额
+                        current_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                        new_total_sell_amount = current_sell_amount + cum_quote
+                        self.trader.tokens[symbol]['last_sell_amount'] = new_total_sell_amount
+                        
+                        # 同时累计到全局变量（用于兼容性）
+                        self.trader.current_sell_amount += cum_quote
+                        
+                        # 更新剩余份额：减去已成交的份额
+                        current_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0.0)
+                        new_quantity = current_quantity - executed_qty
+                        self.trader.tokens[symbol]['last_buy_quantity'] = new_quantity
+                        
+                        self.trader.log_message(f"累计卖单部分成交额: {current_sell_amount:.2f} + {cum_quote:.2f} = {new_total_sell_amount:.2f} USDT")
+                        self.trader.log_message(f"更新剩余份额: {current_quantity} - {executed_qty} = {new_quantity}")
                 
                 if remaining_qty > 0:
                     return self.retry_order_with_remaining_qty(symbol, side, display_name, remaining_qty)

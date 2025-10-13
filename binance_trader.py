@@ -48,7 +48,7 @@ class BinanceTrader:
         self.root.configure(bg='#f0f0f0')
         
         # 居中显示主窗口
-        self.center_window(self.root, 1000, 700)
+        self.center_window(self.root, 1400, 800)
         
         # 初始化认证管理器
         self.auth_manager = AuthManager()
@@ -81,7 +81,8 @@ class BinanceTrader:
             base_url=self.base_url, 
             csrf_token=self.csrf_token,
             cookie=self.cookie,
-            logger=self.logger
+            logger=self.logger,
+            extra_headers=self.config_manager.extra_headers
         )
         
         # 存储代币数据
@@ -94,6 +95,7 @@ class BinanceTrader:
         # 从配置管理器获取统计数据（保留本地引用以便快速访问）
         self.daily_total_amount = self.config_manager.daily_total_amount
         self.daily_trade_loss = self.config_manager.daily_trade_loss
+        self.daily_completed_trades = self.config_manager.daily_completed_trades
         self.last_trade_date = self.config_manager.last_trade_date
         
         # 当前买卖交易跟踪
@@ -106,6 +108,18 @@ class BinanceTrader:
         # 4倍自动交易状态
         self.trading_4x_active = False  # 4倍自动交易是否激活
         self.trading_4x_thread = None  # 4倍自动交易线程
+        
+        # 定时交易状态
+        self.scheduled_trading_enabled = False  # 定时交易是否启用
+        self.scheduled_trading_thread = None  # 定时交易检查线程
+        self.last_scheduled_date = None  # 上次执行定时交易的日期
+        
+        # 今日交易次数统计
+        # daily_completed_trades 现在由 config_manager 管理
+        self.alarm_played_today = False  # 今日是否已播放过闹钟
+        
+        # 闹钟播放状态
+        self.alarm_is_playing = False  # 闹钟是否正在播放
         
         # 交易成功标识
         self.trade_success_flag = True  # 标识当前交易是否成功
@@ -133,6 +147,7 @@ class BinanceTrader:
         # 延迟更新今日交易总额和损耗显示，确保界面已完全创建
         self.root.after(100, self.update_daily_total_display)
         self.root.after(100, self.update_daily_loss_display)
+        self.root.after(100, self.update_daily_trade_count_display)
     
     def load_alpha_id_map(self):
         """加载ALPHA代币ID映射"""
@@ -282,15 +297,70 @@ class BinanceTrader:
         )
         add_btn.pack(side='left', padx=10)
         
-        # 状态标签
-        self.status_label = tk.Label(
+        # 定时交易控件
+        tk.Label(input_frame, text="定时交易:", font=('Arial', 10), bg='#f0f0f0').pack(side='left', padx=(20, 5))
+        
+        # 小时输入
+        self.scheduled_hour_var = tk.StringVar(value="05")
+        hour_entry = tk.Entry(
             input_frame, 
-            text="就绪", 
+            textvariable=self.scheduled_hour_var,
+            width=3,
             font=('Arial', 10),
-            fg='green',
-            bg='#f0f0f0'
+            justify='center'
         )
-        self.status_label.pack(side='right', padx=10)
+        hour_entry.pack(side='left', padx=2)
+        
+        tk.Label(input_frame, text=":", font=('Arial', 10), bg='#f0f0f0').pack(side='left')
+        
+        # 分钟输入
+        self.scheduled_minute_var = tk.StringVar(value="30")
+        minute_entry = tk.Entry(
+            input_frame,
+            textvariable=self.scheduled_minute_var,
+            width=3,
+            font=('Arial', 10),
+            justify='center'
+        )
+        minute_entry.pack(side='left', padx=2)
+        
+        # 启用定时交易复选框
+        self.scheduled_trading_var = tk.BooleanVar()
+        scheduled_checkbox = tk.Checkbutton(
+            input_frame,
+            text="启用定时交易",
+            variable=self.scheduled_trading_var,
+            command=self.on_scheduled_trading_toggle,
+            font=('Arial', 10),
+            bg='#f0f0f0',
+            activebackground='#f0f0f0'
+        )
+        scheduled_checkbox.pack(side='left', padx=(10, 0))
+        
+        # 启用闹钟复选框
+        self.enable_alarm_var = tk.BooleanVar()
+        alarm_checkbox = tk.Checkbutton(
+            input_frame,
+            text="启用闹钟",
+            variable=self.enable_alarm_var,
+            font=('Arial', 10),
+            bg='#f0f0f0',
+            activebackground='#f0f0f0'
+        )
+        alarm_checkbox.pack(side='left', padx=(10, 0))
+        
+        # 停止闹钟按钮
+        self.stop_alarm_btn = tk.Button(
+            input_frame,
+            text="停止闹钟",
+            command=self.stop_alarm_manually,
+            bg='#27ae60',  # 初始绿色（没有播放）
+            fg='white',
+            font=('Arial', 10, 'bold'),
+            padx=10,
+            pady=2
+        )
+        self.stop_alarm_btn.pack(side='left', padx=(10, 0))
         
         # 代币列表区域
         list_frame = tk.Frame(self.root, bg='#f0f0f0')
@@ -306,10 +376,10 @@ class BinanceTrader:
         control_frame = tk.Frame(self.root, bg='#f0f0f0')
         control_frame.pack(fill='x', padx=10, pady=10)
         
-        # 设置Token按钮
+        # 设置认证信息按钮
         token_btn = tk.Button(
             control_frame,
-            text="设置Token",
+            text="设置认证信息",
             command=self.show_token_dialog,
             bg='#8e44ad',
             fg='white',
@@ -341,6 +411,19 @@ class BinanceTrader:
             padx=20
         )
         stability_btn.pack(side='left', padx=5)
+        
+        # 认证信息过期显示（单独一行）
+        auth_info_frame = tk.Frame(self.root, bg='#f0f0f0')
+        auth_info_frame.pack(fill='x', padx=10, pady=(0, 5))
+        
+        self.auth_expiry_label = tk.Label(
+            auth_info_frame,
+            text="正在检查认证信息...",
+            bg='#f0f0f0',
+            fg='#666666',
+            font=('Arial', 10)
+        )
+        self.auth_expiry_label.pack(anchor='w')
         
         # 今日交易总额显示
         daily_total_frame = tk.Frame(control_frame, bg='#f0f0f0')
@@ -388,6 +471,28 @@ class BinanceTrader:
             pady=5
         )
         self.daily_loss_label.pack(side='left', padx=5)
+        
+        # 今日交易次数显示
+        tk.Label(
+            daily_total_frame,
+            text="今日已完成交易次数:",
+            font=('Arial', 12, 'bold'),
+            bg='#f0f0f0',
+            fg='#2c3e50'
+        ).pack(side='left', padx=(10, 0))
+        
+        self.daily_trade_count_label = tk.Label(
+            daily_total_frame,
+            text="0",
+            font=('Arial', 12, 'bold'),
+            bg='#fff3cd',
+            fg='#856404',
+            relief='raised',
+            bd=2,
+            padx=10,
+            pady=5
+        )
+        self.daily_trade_count_label.pack(side='left', padx=5)
         
         # 4倍自动交易控制行
         trading_4x_control_frame = tk.Frame(self.root, bg='#f0f0f0')
@@ -443,6 +548,22 @@ class BinanceTrader:
         
         # 将日志控件设置到logger中
         self.logger.set_log_widget(self.log_text)
+        
+        # 状态栏
+        status_frame = tk.Frame(self.root, bg='#2c3e50', height=30)
+        status_frame.pack(fill='x', side='bottom')
+        status_frame.pack_propagate(False)
+        
+        self.status_label = tk.Label(
+            status_frame,
+            text="就绪",
+            font=('Arial', 10),
+            fg='#ecf0f1',
+            bg='#2c3e50',
+            anchor='w',
+            padx=10
+        )
+        self.status_label.pack(fill='both', expand=True)
     
     def create_custom_table(self, parent):
         """创建自定义表格"""
@@ -554,11 +675,136 @@ class BinanceTrader:
         # 设置窗口位置
         window.geometry(f"{width}x{height}+{x}+{y}")
     
+    @staticmethod
+    def parse_request_headers(headers_text):
+        """
+        解析浏览器复制的 Request Headers 或 cURL 命令
+        
+        Args:
+            headers_text: 完整的 Request Headers 文本或 cURL 命令
+            
+        Returns:
+            dict: 解析后的headers字典，包含 cookie, csrftoken 等字段
+        """
+        headers_dict = {}
+        
+        # 检查是否是 cURL 格式
+        if headers_text.strip().startswith('curl'):
+            return BinanceTrader.parse_curl_command(headers_text)
+        else:
+            return BinanceTrader.parse_headers_format(headers_text)
+    
+    @staticmethod
+    def parse_curl_command(curl_text):
+        """
+        解析 cURL 命令格式
+        
+        Args:
+            curl_text: cURL 命令文本
+            
+        Returns:
+            dict: 解析后的headers字典
+        """
+        headers_dict = {}
+        lines = curl_text.strip().split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            
+            # 跳过空行和 curl 命令本身
+            if not line or line.startswith('curl'):
+                continue
+            
+            # 解析 -H 'header: value' 格式
+            if line.startswith("-H '") and line.endswith("' \\"):
+                # 移除开头的 -H ' 和结尾的 ' \
+                header_line = line[4:-3]
+                if ':' in header_line:
+                    parts = header_line.split(':', 1)
+                    if len(parts) == 2:
+                        key = parts[0].strip().lower()
+                        value = parts[1].strip()
+                        headers_dict[key] = value
+            
+            # 解析 -b 'cookie' 格式
+            elif line.startswith("-b '") and line.endswith("' \\"):
+                # 移除开头的 -b ' 和结尾的 ' \
+                cookie_value = line[4:-3]
+                headers_dict['cookie'] = cookie_value
+            
+            # 处理最后一行（没有 \ 结尾）
+            elif line.startswith("-H '") and line.endswith("'"):
+                header_line = line[4:-1]
+                if ':' in header_line:
+                    parts = header_line.split(':', 1)
+                    if len(parts) == 2:
+                        key = parts[0].strip().lower()
+                        value = parts[1].strip()
+                        headers_dict[key] = value
+            
+            elif line.startswith("-b '") and line.endswith("'"):
+                cookie_value = line[4:-1]
+                headers_dict['cookie'] = cookie_value
+        
+        return headers_dict
+    
+    @staticmethod
+    def parse_headers_format(headers_text):
+        """
+        解析传统的 Request Headers 格式（冒号分隔或两行格式）
+        
+        Args:
+            headers_text: Request Headers 文本
+            
+        Returns:
+            dict: 解析后的headers字典
+        """
+        headers_dict = {}
+        lines = headers_text.strip().split('\n')
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # 跳过空行和以:开头的伪头部
+            if not line or line.startswith(':'):
+                i += 1
+                continue
+            
+            # 处理两种格式：
+            # 1. 冒号分隔格式: "header-name: value"
+            # 2. 两行格式: "header-name" + "\n" + "value"
+            
+            if ':' in line:
+                # 冒号分隔格式
+                parts = line.split(':', 1)
+                if len(parts) == 2:
+                    key = parts[0].strip().lower()
+                    value = parts[1].strip()
+                    
+                    # 处理多行值（cookie特别长可能换行）
+                    while i + 1 < len(lines) and not ':' in lines[i + 1] and not lines[i + 1].startswith(':'):
+                        i += 1
+                        value += lines[i].strip()
+                    
+                    headers_dict[key] = value
+            else:
+                # 两行格式：当前行是header名称，下一行是值
+                key = line.lower()
+                if i + 1 < len(lines):
+                    i += 1
+                    value = lines[i].strip()
+                    headers_dict[key] = value
+            
+            i += 1
+        
+        return headers_dict
+    
     def show_token_dialog(self):
-        """显示Token设置对话框"""
+        """显示认证信息设置对话框"""
         dialog = tk.Toplevel(self.root)
         dialog.title("设置认证信息")
-        dialog.geometry("600x520")
+        dialog.geometry("700x650")
         dialog.configure(bg='#2c3e50')
         dialog.resizable(False, False)
         
@@ -567,7 +813,7 @@ class BinanceTrader:
         dialog.grab_set()
         
         # 居中显示对话框
-        self.center_window(dialog, 600, 520)
+        self.center_window(dialog, 700, 650)
         
         # 标题
         title_frame = tk.Frame(dialog, bg='#2c3e50', height=60)
@@ -589,7 +835,7 @@ class BinanceTrader:
         
         info_text = tk.Text(
             info_frame,
-            height=6,
+            height=7,
             font=('Arial', 10),
             bg='#34495e',
             fg='#ecf0f1',
@@ -599,85 +845,109 @@ class BinanceTrader:
         info_text.pack(fill='x')
         
         info_content = """获取认证信息的方法：
-1. 在浏览器中登录币安
-2. 按F12打开开发者工具
-3. 切换到Network标签页
-4. 在币安页面进行任何操作
-5. 找到API请求，查看Request Headers中的：
-   - csrftoken字段（第一行）
-   - Cookie字段（第二行）
-6. 复制这些值并粘贴到下方输入框"""
+                        1. 在浏览器中登录币安
+                        2. 按F12打开开发者工具
+                        3. 切换到Network标签页
+                        4. 在币安页面进行任何操作
+                        5. 找到任意API请求（如：/bapi/...），右键点击
+                        6. 选择"Copy" -> "Copy as cURL (bash)"（推荐）
+                        或选择"Copy Request Headers"
+                        7. 将复制的内容粘贴到下方文本框中
+                        8. 点击"保存"按钮
+
+                        支持的格式：
+                        • cURL命令格式（推荐）
+                        • Request Headers格式（冒号分隔）
+                        • 两行格式（header名称 + header值）"""
         
         info_text.config(state='normal')
         info_text.insert('1.0', info_content)
         info_text.config(state='disabled')
         
-        # 输入框区域
+        # Request Headers输入框区域
         input_frame = tk.Frame(dialog, bg='#2c3e50')
-        input_frame.pack(fill='x', padx=20, pady=10)
-        
-        # CSRF Token输入框
-        csrf_frame = tk.Frame(input_frame, bg='#2c3e50')
-        csrf_frame.pack(fill='x', pady=(0, 15))
+        input_frame.pack(fill='both', expand=True, padx=20, pady=10)
         
         tk.Label(
-            csrf_frame,
-            text="CSRF Token:",
+            input_frame,
+            text="Request Headers（直接粘贴完整内容）:",
             font=('Arial', 12, 'bold'),
             fg='white',
             bg='#2c3e50'
         ).pack(anchor='w', pady=(0, 5))
         
-        csrf_entry = tk.Entry(
-            csrf_frame,
-            font=('Consolas', 11),
-            width=70
+        # 创建带滚动条的文本框
+        text_frame = tk.Frame(input_frame, bg='#2c3e50')
+        text_frame.pack(fill='both', expand=True)
+        
+        scrollbar = tk.Scrollbar(text_frame)
+        scrollbar.pack(side='right', fill='y')
+        
+        headers_text = tk.Text(
+            text_frame,
+            height=20,
+            font=('Consolas', 9),
+            wrap='none',
+            yscrollcommand=scrollbar.set
         )
-        csrf_entry.pack(fill='x', pady=(0, 5))
+        headers_text.pack(side='left', fill='both', expand=True)
+        scrollbar.config(command=headers_text.yview)
         
-        # 如果已有token，显示完整token
-        if self.csrf_token:
-            csrf_entry.insert(0, self.csrf_token)
+        # 提示文本
+        placeholder = "请粘贴完整的 Request Headers...\n例如：\naccept: */*\ncookie: bnc-uuid=xxx...\ncsrftoken: xxx..."
+        headers_text.insert('1.0', placeholder)
+        headers_text.config(fg='gray')
         
-        # Cookie输入框
-        cookie_frame = tk.Frame(input_frame, bg='#2c3e50')
-        cookie_frame.pack(fill='x', pady=(0, 15))
+        def on_focus_in(event):
+            if headers_text.get('1.0', 'end-1c') == placeholder:
+                headers_text.delete('1.0', 'end')
+                headers_text.config(fg='black')
         
-        tk.Label(
-            cookie_frame,
-            text="Cookie:",
-            font=('Arial', 12, 'bold'),
-            fg='white',
-            bg='#2c3e50'
-        ).pack(anchor='w', pady=(0, 5))
+        def on_focus_out(event):
+            if not headers_text.get('1.0', 'end-1c').strip():
+                headers_text.insert('1.0', placeholder)
+                headers_text.config(fg='gray')
         
-        cookie_text = tk.Text(
-            cookie_frame,
-            height=6,
-            font=('Consolas', 10),
-            wrap='word'
-        )
-        cookie_text.pack(fill='x', pady=(0, 5))
-        
-        # 如果已有cookie，显示完整cookie
-        if self.cookie:
-            cookie_text.insert('1.0', self.cookie)
+        headers_text.bind('<FocusIn>', on_focus_in)
+        headers_text.bind('<FocusOut>', on_focus_out)
         
         # 按钮区域
         button_frame = tk.Frame(dialog, bg='#2c3e50')
         button_frame.pack(fill='x', padx=20, pady=(10, 20))
         
-        def save_tokens():
-            csrf_token = csrf_entry.get().strip()
-            cookie = cookie_text.get('1.0', 'end-1c').strip()
+        def save_headers():
+            headers_content = headers_text.get('1.0', 'end-1c').strip()
             
-            if not csrf_token:
-                messagebox.showwarning("警告", "请输入CSRF Token")
+            if not headers_content or headers_content == placeholder:
+                messagebox.showwarning("警告", "请粘贴 Request Headers")
                 return
+            
+            # 解析 headers
+            parsed_headers = self.parse_request_headers(headers_content)
+            
+            # 提取必需的字段
+            cookie = parsed_headers.get('cookie', '')
+            csrf_token = parsed_headers.get('csrftoken', '')
             
             if not cookie:
-                messagebox.showwarning("警告", "请输入Cookie")
+                messagebox.showerror("错误", "未找到 cookie 字段，请检查粘贴的内容")
                 return
+            
+            if not csrf_token:
+                messagebox.showerror("错误", "未找到 csrftoken 字段，请检查粘贴的内容")
+                return
+            
+            # 提取额外的有用字段
+            extra_headers = {
+                'device-info': parsed_headers.get('device-info', ''),
+                'fvideo-id': parsed_headers.get('fvideo-id', ''),
+                'fvideo-token': parsed_headers.get('fvideo-token', ''),
+                'bnc-uuid': parsed_headers.get('bnc-uuid', ''),
+                'user-agent': parsed_headers.get('user-agent', ''),
+            }
+            
+            # 使用config_manager设置认证信息
+            self.config_manager.set_credentials(csrf_token, cookie, extra_headers)
             
             # 更新本地认证信息
             self.csrf_token = csrf_token
@@ -688,12 +958,16 @@ class BinanceTrader:
                 base_url=self.base_url,
                 csrf_token=self.csrf_token,
                 cookie=self.cookie,
-                logger=self.logger
+                logger=self.logger,
+                extra_headers=extra_headers
             )
             
-            # 保存到配置文件
-            self.save_config()
             self.log_message("认证信息设置成功并已保存")
+            self.log_message(f"已提取: cookie, csrftoken, device-info, fvideo-id, bnc-uuid 等字段")
+            
+            # 更新认证信息过期显示
+            self.update_auth_expiry_display()
+            
             dialog.destroy()
         
         # 取消按钮
@@ -711,18 +985,17 @@ class BinanceTrader:
         # 确认按钮
         confirm_btn = tk.Button(
             button_frame,
-            text="确认",
-            command=save_tokens,
-            bg='#3498db',
+            text="设置",
+            command=save_headers,
+            bg='#27ae60',
             fg='white',
             font=('Arial', 10, 'bold'),
-            padx=15
+            padx=20
         )
         confirm_btn.pack(side='right')
         
-        # 绑定回车键
-        csrf_entry.bind('<Return>', lambda e: save_tokens())
-        csrf_entry.focus()
+        # 聚焦到文本框
+        headers_text.focus()
     
     def log_message(self, message):
         """添加日志消息 - 调用logger模块记录日志"""
@@ -733,9 +1006,33 @@ class BinanceTrader:
         self.status_label.config(text=message, fg=color)
         self.root.update_idletasks()
     
-    def get_token_price(self, symbol):
-        """获取代币价格 - 调用API模块"""
-        return self.api.get_token_price(symbol)
+    def get_token_price(self, symbol, max_retries=5):
+        """
+        获取代币价格 - 调用API模块，带重试机制
+        
+        Args:
+            symbol: 代币符号，如 "ALPHA_1USDT"
+            max_retries: 最大重试次数，默认5次
+            
+        Returns:
+            dict: 包含价格和交易信息的字典，失败返回None
+        """
+        import time
+        import random
+        
+        for attempt in range(max_retries):
+            result = self.api.get_token_price(symbol)
+            if result:
+                return result
+            
+            # 如果获取失败且还有重试机会
+            if attempt < max_retries - 1:
+                self.log_message(f"获取 {symbol} 价格失败，第{attempt + 1}次重试")
+                time.sleep(random.uniform(0.5, 1.5))
+        
+        # 所有重试都失败
+        self.log_message(f"获取 {symbol} 价格失败，已重试{max_retries}次")
+        return None
     
     def get_token_24h_stats(self, symbol):
         """获取代币24小时统计 - 调用API模块"""
@@ -1255,6 +1552,241 @@ class BinanceTrader:
             except ValueError:
                 self.log_message("请输入有效的交易次数")
     
+    def on_scheduled_trading_toggle(self):
+        """定时交易复选框状态改变时的处理"""
+        if self.scheduled_trading_var.get():
+            # 启用定时交易
+            self.scheduled_trading_enabled = True
+            self.log_message("定时交易已启用")
+            self.start_scheduled_trading_checker()
+        else:
+            # 禁用定时交易
+            self.scheduled_trading_enabled = False
+            self.log_message("定时交易已禁用")
+            if self.scheduled_trading_thread and self.scheduled_trading_thread.is_alive():
+                # 注意：线程无法强制停止，只能设置标志位让它自然结束
+                pass
+    
+    def start_scheduled_trading_checker(self):
+        """启动定时交易检查线程"""
+        if self.scheduled_trading_thread and self.scheduled_trading_thread.is_alive():
+            return  # 如果已经在运行，不重复启动
+        
+        self.scheduled_trading_thread = threading.Thread(
+            target=self.scheduled_trading_worker, 
+            daemon=True
+        )
+        self.scheduled_trading_thread.start()
+    
+    def scheduled_trading_worker(self):
+        """定时交易检查工作线程"""
+        while self.scheduled_trading_enabled:
+            try:
+                current_time = datetime.now()
+                current_date = current_time.date()
+                current_hour = current_time.hour
+                current_minute = current_time.minute
+                
+                # 获取设定的时间
+                try:
+                    scheduled_hour = int(self.scheduled_hour_var.get())
+                    scheduled_minute = int(self.scheduled_minute_var.get())
+                except ValueError:
+                    self.log_message("定时交易时间格式错误，请检查输入")
+                    time.sleep(60)  # 等待1分钟后重试
+                    continue
+                
+                # 检查是否到达设定时间
+                if (current_hour == scheduled_hour and 
+                    current_minute == scheduled_minute and 
+                    self.last_scheduled_date != current_date and
+                    not self.trading_4x_active):
+                    
+                    # 执行定时交易
+                    self.last_scheduled_date = current_date
+                    self.log_message(f"到达定时交易时间 {scheduled_hour:02d}:{scheduled_minute:02d}，开始执行4倍自动交易")
+                    
+                    # 获取默认交易次数
+                    try:
+                        trading_count = int(self.trading_count_var.get())
+                    except ValueError:
+                        trading_count = 8  # 默认8次
+                    
+                    # 在GUI线程中执行交易
+                    self.root.after(0, lambda: self.execute_scheduled_trading(trading_count))
+                
+                # 检查超时提醒（超过设定时间30分钟）
+                self.check_timeout_alarm(current_hour, current_minute, scheduled_hour, scheduled_minute, current_date)
+                
+                # 每分钟检查一次
+                time.sleep(60)
+                
+            except Exception as e:
+                self.log_message(f"定时交易检查出错: {str(e)}")
+                time.sleep(60)  # 出错后等待1分钟再重试
+    
+    def execute_scheduled_trading(self, trading_count):
+        """执行定时交易"""
+        try:
+            if trading_count <= 0:
+                self.log_message("交易次数必须大于0")
+                return
+            
+            self.trading_4x_active = True
+            self.trading_4x_btn.config(text="停止4倍交易", bg='#e74c3c')
+            self.log_message(f"定时交易启动，计划交易 {trading_count} 次")
+            
+            # 启动4倍自动交易线程
+            self.trading_4x_thread = threading.Thread(
+                target=self.trading_engine.run_4x_trading, 
+                args=(trading_count,), 
+                daemon=True
+            )
+            self.trading_4x_thread.start()
+                    
+        except Exception as e:
+            self.log_message(f"定时交易执行失败: {str(e)}")
+    
+    def check_timeout_alarm(self, current_hour, current_minute, scheduled_hour, scheduled_minute, current_date):
+        """检查超时提醒"""
+        try:
+            # 计算当前时间与设定时间的差值（分钟）
+            current_time_minutes = current_hour * 60 + current_minute
+            scheduled_time_minutes = scheduled_hour * 60 + scheduled_minute
+            
+            # 如果当前时间超过设定时间30分钟，但不超过1小时
+            if scheduled_time_minutes + 30 <= current_time_minutes < scheduled_time_minutes + 60:
+                # 检查今日是否已播放过闹钟
+                if not self.alarm_played_today:
+                    # 获取设定的交易次数
+                    try:
+                        expected_count = int(self.trading_count_var.get())
+                    except ValueError:
+                        expected_count = 8
+                    
+                    # 如果实际交易次数不等于设定次数，且启用了闹钟，播放闹钟
+                    if self.daily_completed_trades != expected_count and self.enable_alarm_var.get():
+                        self.play_alarm()
+                        self.alarm_played_today = True
+                        self.log_message(f"⚠️ 超时警告：设定时间 {scheduled_hour:02d}:{scheduled_minute:02d} 已过30分钟，今日交易次数 {self.daily_completed_trades} 不等于设定次数 {expected_count}，播放闹钟提醒！")
+                    elif self.daily_completed_trades != expected_count and not self.enable_alarm_var.get():
+                        self.log_message(f"⚠️ 超时警告：设定时间 {scheduled_hour:02d}:{scheduled_minute:02d} 已过30分钟，今日交易次数 {self.daily_completed_trades} 不等于设定次数 {expected_count}，但闹钟未启用")
+                    else:
+                        self.log_message(f"今日交易次数已达到设定目标 {expected_count} 次，无需播放闹钟")
+            elif current_time_minutes >= scheduled_time_minutes + 60:
+                # 如果超过设定时间1小时，不再播放闹钟
+                if not self.alarm_played_today:
+                    try:
+                        expected_count = int(self.trading_count_var.get())
+                    except ValueError:
+                        expected_count = 8
+                    
+                    if self.daily_completed_trades != expected_count:
+                        self.log_message(f"⚠️ 超时警告：设定时间 {scheduled_hour:02d}:{scheduled_minute:02d} 已过1小时，今日交易次数 {self.daily_completed_trades} 不等于设定次数 {expected_count}，但已超过闹钟提醒时限")
+                        self.alarm_played_today = True  # 标记为已处理，避免重复提醒
+                        
+        except Exception as e:
+            self.log_message(f"超时检查出错: {str(e)}")
+    
+    def play_alarm(self):
+        """播放闹钟音频"""
+        try:
+            import os
+            import subprocess
+            
+            # 检查alarm.mp3文件是否存在
+            if not os.path.exists("alarm.mp3"):
+                self.log_message("警告：alarm.mp3文件不存在，无法播放闹钟")
+                return
+            
+            # 获取文件绝对路径
+            alarm_path = os.path.abspath("alarm.mp3")
+            
+            # 设置闹钟播放状态
+            self.alarm_is_playing = True
+            
+            # 更新按钮颜色为红色（播放中）
+            self.root.after(0, self.update_alarm_button_color)
+            
+            self.log_message("🔔 闹钟已播放，将循环播放15分钟")
+            
+            # 启动循环播放线程
+            def alarm_worker():
+                try:
+                    # 计算需要播放的次数（15分钟 = 900秒，每次播放7秒+等待3秒=10秒）
+                    total_cycles = 90  # 900 / 10 = 90次
+                    
+                    for i in range(total_cycles):
+                        if not self.alarm_is_playing:
+                            break
+                        
+                        # 使用Windows默认播放器打开MP3文件
+                        # /min表示最小化窗口，避免弹出太多窗口
+                        subprocess.Popen(
+                            f'start /min "" "{alarm_path}"',
+                            shell=True,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL
+                        )
+                        
+                        self.log_message(f"闹钟播放进度: 第{i+1}/{total_cycles}次播放")
+                        
+                        # 等待7秒让音频播放
+                        time.sleep(7)
+                        
+                        # 等待3秒后继续下一次播放
+                        time.sleep(3)
+                    
+                    # 播放结束，更新状态
+                    self.alarm_is_playing = False
+                    self.root.after(0, self.update_alarm_button_color)
+                    self.log_message("🔔 闹钟播放已结束（15分钟）")
+                    
+                except Exception as e:
+                    self.log_message(f"闹钟播放过程出错: {str(e)}")
+                    self.alarm_is_playing = False
+                    self.root.after(0, self.update_alarm_button_color)
+            
+            # 启动播放线程
+            alarm_thread = threading.Thread(target=alarm_worker, daemon=True)
+            alarm_thread.start()
+            
+        except Exception as e:
+            self.log_message(f"播放闹钟失败: {str(e)}")
+    
+    def stop_alarm_manually(self):
+        """手动停止闹钟"""
+        try:
+            # 设置闹钟播放状态为停止
+            self.alarm_is_playing = False
+            
+            # 更新按钮颜色为绿色（停止状态）
+            self.update_alarm_button_color()
+            
+            self.log_message("🔔 闹钟已手动停止")
+        except Exception as e:
+            self.log_message(f"停止闹钟失败: {str(e)}")
+    
+    def update_alarm_button_color(self):
+        """更新闹钟按钮颜色"""
+        try:
+            if hasattr(self, 'stop_alarm_btn') and self.stop_alarm_btn:
+                if self.alarm_is_playing:
+                    # 播放中：红色
+                    self.stop_alarm_btn.config(bg='#e74c3c')
+                else:
+                    # 停止状态：绿色
+                    self.stop_alarm_btn.config(bg='#27ae60')
+        except Exception as e:
+            self.log_message(f"更新闹钟按钮颜色失败: {str(e)}")
+    
+    def reset_daily_alarm_flag(self):
+        """重置每日闹钟标志（在每日重置时调用）"""
+        self.alarm_played_today = False
+        self.config_manager.daily_completed_trades = 0
+        self.daily_completed_trades = 0
+        self.log_message("每日闹钟标志已重置")
+    
     
     def show_stability_dashboard(self):
         """显示稳定度看板窗口"""
@@ -1488,6 +2020,7 @@ class BinanceTrader:
         self.config_manager.cookie = self.cookie
         self.config_manager.daily_total_amount = self.daily_total_amount
         self.config_manager.daily_trade_loss = self.daily_trade_loss
+        self.config_manager.daily_completed_trades = self.daily_completed_trades
         self.config_manager.last_trade_date = self.last_trade_date
         
         # 保存配置
@@ -1509,6 +2042,10 @@ class BinanceTrader:
     def run(self):
         """运行应用"""
         self.log_message("币安量化交易系统启动")
+        
+        # 初始化认证信息过期显示
+        self.root.after(1000, self.update_auth_expiry_display)
+        
         self.root.mainloop()
     
 
@@ -1553,6 +2090,53 @@ class BinanceTrader:
                 self.root.after(100, self.update_daily_loss_display)
         except Exception as e:
             self.log_message(f"更新今日损耗显示失败: {str(e)}")
+    
+    def update_daily_trade_count_display(self):
+        """更新今日交易次数显示"""
+        try:
+            if hasattr(self, 'daily_trade_count_label') and self.daily_trade_count_label:
+                self.daily_trade_count_label.config(text=f"{self.daily_completed_trades}")
+                self.log_message(f"今日交易次数显示已更新: {self.daily_completed_trades}")
+            else:
+                self.log_message("今日交易次数标签尚未创建，将在界面完全加载后重试")
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_daily_trade_count_display)
+        except Exception as e:
+            self.log_message(f"更新今日交易次数显示失败: {str(e)}")
+            
+    def increment_daily_trade_count(self):
+        """增加今日交易次数"""
+        self.daily_completed_trades = self.config_manager.increment_trade_count()
+        self.root.after(0, self.update_daily_trade_count_display)
+        self.log_message(f"今日已完成交易次数: {self.daily_completed_trades}")
+    
+    def update_auth_expiry_display(self):
+        """更新认证信息过期显示"""
+        try:
+            if hasattr(self, 'auth_expiry_label') and self.auth_expiry_label:
+                expiry_info = self.config_manager.get_auth_expiry_info()
+                
+                # 根据状态设置颜色
+                if expiry_info['status'] == 'no_auth':
+                    color = '#e74c3c'  # 红色
+                elif expiry_info['status'] == 'warning':
+                    color = '#f39c12'  # 橙色
+                elif expiry_info['status'] == 'expired':
+                    color = '#e74c3c'  # 红色
+                elif expiry_info['status'] == 'ok':
+                    color = '#27ae60'  # 绿色
+                else:
+                    color = '#e74c3c'  # 红色
+                
+                self.auth_expiry_label.config(
+                    text=expiry_info['message'],
+                    fg=color
+                )
+            else:
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_auth_expiry_display)
+        except Exception as e:
+            self.log_message(f"更新认证信息过期显示失败: {str(e)}")
 
 def main():
     """主函数"""

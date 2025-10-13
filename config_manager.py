@@ -27,10 +27,13 @@ class ConfigManager:
         # 认证信息
         self.csrf_token = None
         self.cookie = None
+        self.csrf_token_updated_time = None  # CSRF token更新时间
+        self.extra_headers = {}  # 额外的 header 字段
         
         # 统计数据
         self.daily_total_amount = 0.0  # 今日交易总额
         self.daily_trade_loss = 0.0    # 今日交易损耗
+        self.daily_completed_trades = 0  # 今日已完成交易次数
         self.last_trade_date = None    # 最后交易日期
     
     def load_config(self):
@@ -48,14 +51,18 @@ class ConfigManager:
                     # 加载认证信息
                     self.csrf_token = config.get('csrf_token')
                     self.cookie = config.get('cookie')
+                    self.csrf_token_updated_time = config.get('csrf_token_updated_time')
+                    self.extra_headers = config.get('extra_headers', {})
                     
                     # 加载统计数据
                     self.daily_total_amount = config.get('daily_total_amount', 0.0)
                     self.daily_trade_loss = config.get('daily_trade_loss', 0.0)
+                    self.daily_completed_trades = config.get('daily_completed_trades', 0)
                     self.last_trade_date = config.get('last_trade_date')
                     
                     print(f"已加载今日交易总额: {self.daily_total_amount:.2f} USDT")
                     print(f"已加载今日交易损耗: {self.daily_trade_loss:.2f} USDT")
+                    print(f"已加载今日完成交易次数: {self.daily_completed_trades}")
                     print(f"最后交易日期: {self.last_trade_date}")
                     
                     # 检查是否需要每日归零
@@ -85,8 +92,11 @@ class ConfigManager:
             config = {
                 'csrf_token': self.csrf_token,
                 'cookie': self.cookie,
+                'csrf_token_updated_time': self.csrf_token_updated_time,
+                'extra_headers': self.extra_headers,
                 'daily_total_amount': self.daily_total_amount,
                 'daily_trade_loss': self.daily_trade_loss,
+                'daily_completed_trades': self.daily_completed_trades,
                 'last_trade_date': self.last_trade_date
             }
             with open(self.config_file, 'w', encoding='utf-8') as f:
@@ -118,6 +128,7 @@ class ConfigManager:
                 
                 self.daily_total_amount = 0.0
                 self.daily_trade_loss = 0.0
+                self.daily_completed_trades = 0
                 self.last_trade_date = today
                 self.save_config()
                 return True
@@ -158,17 +169,70 @@ class ConfigManager:
         self.save_config()
         return self.daily_trade_loss
     
-    def set_credentials(self, csrf_token, cookie):
+    def increment_trade_count(self):
+        """
+        增加交易次数
+        
+        Returns:
+            int: 更新后的交易次数
+        """
+        self.daily_completed_trades += 1
+        self.save_config()
+        return self.daily_completed_trades
+    
+    def set_credentials(self, csrf_token, cookie, extra_headers=None):
         """
         设置认证信息
         
         Args:
             csrf_token: CSRF令牌
             cookie: Cookie字符串
+            extra_headers: 额外的 header 字段字典
         """
         self.csrf_token = csrf_token
         self.cookie = cookie
+        self.csrf_token_updated_time = datetime.now().isoformat()  # 记录更新时间
+        if extra_headers:
+            self.extra_headers = extra_headers
         self.save_config()
+    
+    def get_auth_expiry_info(self):
+        """
+        获取认证信息过期信息
+        
+        Returns:
+            dict: 包含剩余天数和状态信息的字典
+        """
+        if not self.csrf_token_updated_time:
+            return {'days_remaining': 0, 'status': 'no_auth', 'message': '未设置认证信息'}
+        
+        try:
+            # 解析更新时间
+            updated_time = datetime.fromisoformat(self.csrf_token_updated_time)
+            current_time = datetime.now()
+            
+            # 计算天数差
+            days_passed = (current_time - updated_time).days
+            days_remaining = max(0, 5 - days_passed)  # 假设5天过期
+            
+            if days_remaining > 2:
+                status = 'ok'
+                message = f'认证信息还有{days_remaining}天过期'
+            elif days_remaining > 0:
+                status = 'warning'
+                message = f'认证信息还有{days_remaining}天过期，请更新认证信息'
+            else:
+                status = 'expired'
+                message = '认证信息已过期，请立即更新认证信息'
+            
+            return {
+                'days_remaining': days_remaining,
+                'status': status,
+                'message': message,
+                'updated_time': updated_time
+            }
+        except Exception as e:
+            return {'days_remaining': 0, 'status': 'error', 'message': f'计算过期时间失败: {str(e)}'}
     
     def get_credentials(self):
         """

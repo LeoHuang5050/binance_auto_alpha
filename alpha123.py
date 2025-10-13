@@ -393,7 +393,7 @@ class Alpha123Client:
         - 排除KOGE
         - 4倍天数(md)必须大于0
         - 稳定度状态(st)必须为 "green:stable"
-        - 价差基点(spr)必须 < 1
+        - 价差基点(spr)必须 < 0.2
         - 按价差基点(spr)升序排序，取最小值
         
         Returns:
@@ -417,18 +417,30 @@ class Alpha123Client:
                         self.logger.log_message(f"代币 {project} 稳定度状态 {stability_status} != green:stable，不符合条件")
                         continue
                     
+                    # 条件2：md必须大于0
+                    md_str = item.get('md', '0')
+                    try:
+                        md_value = float(md_str)
+                    except (ValueError, TypeError):
+                        self.logger.log_message(f"代币 {project} 4倍天数无效: {md_str}")
+                        continue
+                    
+                    if md_value <= 0:
+                        self.logger.log_message(f"代币 {project} 4倍天数 {md_value} <= 0，不符合条件")
+                        continue
+                    
                     # 获取价差基点
                     spread_str = item.get('spread', 'N/A')
                     
-                    # 条件2：spr必须 < 1
+                    # 条件3：spr必须 < 0.2
                     try:
                         spread_value = float(spread_str)
                     except (ValueError, TypeError):
                         self.logger.log_message(f"代币 {project} 价差基点无效: {spread_str}")
                         continue
                     
-                    if spread_value >= 1:
-                        self.logger.log_message(f"代币 {project} 价差基点 {spread_value} >= 1，不符合稳定条件")
+                    if spread_value >= 0.2:
+                        self.logger.log_message(f"代币 {project} 价差基点 {spread_value} >= 0.2，不符合稳定条件")
                         continue
                     
                     # 两个条件都满足，检查alpha_id
@@ -444,7 +456,7 @@ class Alpha123Client:
                         # 获取稳定度信息（用于显示）
                         stability_info = item.get('stability', '未知')
                         
-                        self.logger.log_message(f"[OK] 选中最稳定代币: {project}, st={stability_status}, spr={spread_value}<1")
+                        self.logger.log_message(f"[OK] 选中最稳定代币: {project}, st={stability_status}, md={md_value}>0, spr={spread_value}<0.2")
                         
                         return {
                             'symbol': f"{alpha_id}USDT",
@@ -454,7 +466,7 @@ class Alpha123Client:
                             'spread': spread_str
                         }
             
-            self.logger.log_message("没有找到符合条件的稳定代币（st=green:stable 且 spr<1）")
+            self.logger.log_message("没有找到符合条件的稳定代币（st=green:stable 且 md>0 且 spr<0.2）")
             return None
             
         except Exception as e:

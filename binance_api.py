@@ -6,13 +6,14 @@ Binance API Module for Binance Auto Trade System
 """
 
 import requests
+from decimal import Decimal, ROUND_DOWN
 from logger import Logger
 
 
 class BinanceAPI:
     """币安API接口类 - 负责与币安API进行交互"""
     
-    def __init__(self, base_url=None, csrf_token=None, cookie=None, logger=None):
+    def __init__(self, base_url=None, csrf_token=None, cookie=None, logger=None, extra_headers=None):
         """
         初始化币安API接口
         
@@ -21,11 +22,13 @@ class BinanceAPI:
             csrf_token: CSRF令牌
             cookie: Cookie字符串
             logger: Logger实例，用于记录日志
+            extra_headers: 额外的 header 字段（device-info, fvideo-id 等）
         """
         self.base_url = base_url or "https://www.binance.com/bapi/defi/v1/public/alpha-trade"
         self.csrf_token = csrf_token
         self.cookie = cookie
         self.logger = logger or Logger()
+        self.extra_headers = extra_headers or {}
     
     def get_token_price(self, symbol):
         """
@@ -183,10 +186,21 @@ class BinanceAPI:
             tuple: (payment_amount, payment_wallet_type)
         """
         if side == "BUY":
-            payment_amount = quantity * price
-            # 只有当小数位数超过8位时才截取
-            if len(str(payment_amount).split('.')[-1]) > 8:
-                payment_amount = int(payment_amount * 100000000) / 100000000
+            # 使用 Decimal 进行精确计算，避免浮点数精度问题
+            dec_quantity = Decimal(str(quantity))
+            dec_price = Decimal(str(price))
+            dec_amount = dec_quantity * dec_price
+            
+            # 检查小数位数，如果超过8位则截取（向下取整）
+            # 获取小数部分的位数
+            amount_str = str(dec_amount)
+            if '.' in amount_str:
+                decimal_places = len(amount_str.split('.')[1])
+                if decimal_places > 8:
+                    dec_amount = dec_amount.quantize(Decimal('0.00000001'), rounding=ROUND_DOWN)
+            
+            # 转换回 float
+            payment_amount = float(dec_amount)
             return payment_amount, "CARD"
         else:
             # 卖单的支付金额就是代币数量
@@ -205,7 +219,13 @@ class BinanceAPI:
             str: 格式化后的金额字符串
         """
         if side == "BUY":
-            return f"{amount:.8f}"
+            # 使用 Decimal 确保精确的字符串格式化
+            if isinstance(amount, float):
+                dec_amount = Decimal(str(amount))
+            else:
+                dec_amount = Decimal(amount)
+            # 格式化为8位小数的字符串
+            return format(dec_amount, '.8f')
         else:
             return str(amount)
     
@@ -240,44 +260,66 @@ class BinanceAPI:
         }
     
     @staticmethod
-    def build_request_headers(csrf_token, cookie):
+    def build_request_headers(csrf_token, cookie, extra_headers=None):
         """
         构建请求头
         
         Args:
             csrf_token: CSRF令牌
             cookie: Cookie字符串
+            extra_headers: 额外的 header 字段字典（可覆盖默认值）
             
         Returns:
             dict: 请求头字典
         """
-        return {
+        extra_headers = extra_headers or {}
+        
+        # 默认headers
+        headers = {
             'Accept': '*/*',
             'Accept-Encoding': 'gzip, deflate, br, zstd',
             'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Baggage': 'sentry-environment=prod,sentry-release=20250924-d1d0004c-2900,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=847f639347bc49be967b6777b03a413c,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
-            'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
             'Clienttype': 'web',
             'Content-Type': 'application/json',
             'Cookie': cookie,
             'csrftoken': csrf_token,
-            'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQzMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-            'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
             'lang': 'zh-CN',
             'Priority': 'u=1, i',
-            'Referer': 'https://www.binance.com/zh-CN/alpha/bsc/0xe6df05ce8c8301223373cf5b969afcb1498c5528',
+            'Referer': 'https://www.binance.com/zh-CN/alpha',
             'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
             'Sec-Ch-Ua-Mobile': '?0',
             'Sec-Ch-Ua-Platform': '"Windows"',
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
-            'Sentry-Trace': '847f639347bc49be967b6777b03a413c-ac242fc8bf0e51e2-0',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
             'X-Passthrough-Token': '',
-            'X-Trace-Id': '000f2190-8b35-4cb1-aa27-d62a5017a918',
-            'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
         }
+        
+        # 从 extra_headers 中添加/覆盖关键字段
+        if 'device-info' in extra_headers and extra_headers['device-info']:
+            headers['device-info'] = extra_headers['device-info']
+        
+        if 'fvideo-id' in extra_headers and extra_headers['fvideo-id']:
+            headers['fvideo-id'] = extra_headers['fvideo-id']
+        
+        if 'fvideo-token' in extra_headers and extra_headers['fvideo-token']:
+            headers['fvideo-token'] = extra_headers['fvideo-token']
+        
+        if 'bnc-uuid' in extra_headers and extra_headers['bnc-uuid']:
+            headers['Bnc-Uuid'] = extra_headers['bnc-uuid']
+        
+        if 'user-agent' in extra_headers and extra_headers['user-agent']:
+            headers['User-Agent'] = extra_headers['user-agent']
+        
+        # 添加其他动态生成的字段
+        if 'baggage' in extra_headers and extra_headers['baggage']:
+            headers['Baggage'] = extra_headers['baggage']
+        
+        if 'sentry-trace' in extra_headers and extra_headers['sentry-trace']:
+            headers['Sentry-Trace'] = extra_headers['sentry-trace']
+        
+        return headers
     
     # ==================== 订单API方法 ====================
     
@@ -380,7 +422,7 @@ class BinanceAPI:
             
             # 5. 构建请求头和payload
             url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place"
-            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie)
+            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie, self.extra_headers)
             payload = BinanceAPI.build_order_payload(
                 symbol, side, price_formatted, quantity_formatted, 
                 payment_amount, payment_wallet_type
@@ -433,7 +475,10 @@ class BinanceAPI:
                     self.logger.log_trade_detail(trade_detail)
                     
                     # 使用logger记录错误信息
-                    error_info = f"""{side}单下单失败 - 代币: {symbol}, 价格: {price}, 数量: {quantity_formatted}, 支付金额: {payment_amount}, 错误代码: {error_code}, 错误信息: {error_message}"""
+                    if side == "BUY":
+                        error_info = f"""{side}单下单失败 - 代币: {symbol}, 价格: {price}, 数量: {quantity_formatted}, 支付金额: {payment_amount} USDT, 错误代码: {error_code}, 错误信息: {error_message}"""
+                    else:  # SELL
+                        error_info = f"""{side}单下单失败 - 代币: {symbol}, 价格: {price}, 数量: {quantity_formatted}, 支付代币数量: {payment_amount}, 错误代码: {error_code}, 错误信息: {error_message}"""
                     self.logger.log_error(error_info)
                     
                     # 控制台打印详细信息，方便排查
@@ -496,7 +541,7 @@ class BinanceAPI:
             url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/cancel-all"
             payload = {}
             
-            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie)
+            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie, self.extra_headers)
             
             response = requests.post(url, headers=headers, json=payload, timeout=10)
             if response.status_code == 200:
@@ -545,7 +590,7 @@ class BinanceAPI:
                 'endTime': end_time
             }
             
-            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie)
+            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie, self.extra_headers)
             
             response = requests.get(url, headers=headers, params=params, timeout=10)
             if response.status_code == 200:
@@ -613,7 +658,7 @@ class BinanceAPI:
                 'endTime': end_time
             }
             
-            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie)
+            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie, self.extra_headers)
             
             response = requests.get(url, params=params, headers=headers, timeout=10)
             response.raise_for_status()
@@ -636,6 +681,47 @@ class BinanceAPI:
             except:
                 pass
             return None
+    
+    def get_token_balance(self, symbol):
+        """
+        获取指定代币的钱包余额
+        
+        Args:
+            symbol: 代币符号（例如 "AOP"）
+            
+        Returns:
+            float: 代币数量，未找到或失败返回0
+        """
+        try:
+            url = "https://www.binance.com/bapi/defi/v1/private/wallet-direct/cloud-wallet/alpha"
+            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie, self.extra_headers)
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get('code') == '000000':
+                    token_list = data.get('data', {}).get('list', [])
+                    
+                    for token in token_list:
+                        if token.get('symbol') == symbol:
+                            amount = float(token.get('amount', 0))
+                            self.logger.log_message(f"从钱包接口获取 {symbol} 余额: {amount}")
+                            return amount
+                    
+                    self.logger.log_message(f"钱包中未找到代币: {symbol}")
+                    return 0
+                else:
+                    self.logger.log_message(f"获取钱包余额失败: {data.get('message', '未知错误')}")
+                    return 0
+            else:
+                self.logger.log_message(f"获取钱包余额请求失败: HTTP {response.status_code}")
+                return 0
+                
+        except Exception as e:
+            self.logger.log_message(f"获取钱包余额异常: {str(e)}")
+            return 0
 
 
 # 创建全局API实例（可选）

@@ -100,6 +100,9 @@ class TradingEngine:
                     completed_trades += 1
                     self.trader.log_message(f"4倍交易完成 {completed_trades}/{trading_count}")
                     
+                    # 增加今日交易次数统计
+                    self.trader.increment_daily_trade_count()
+                    
                     # 计算本次买卖的损耗（买单成交额 - 卖单成交额）
                     if symbol in self.trader.tokens:
                         last_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
@@ -215,11 +218,10 @@ class TradingEngine:
                 # 添加调试信息
                 self.trader.log_message(f"[DEBUG] {display_name} 进入交易循环，auto_trading状态: {self.trader.auto_trading.get(symbol, False)}")
                 
-                # 1. 获取价格
+                # 1. 获取价格（已内置重试机制）
                 price_data = self.trader.get_token_price(symbol)
                 if not price_data:
-                    self.trader.log_message(f"{display_name} 获取价格失败，等待1秒后重试")
-                    time.sleep(random.uniform(0, 1))
+                    self.trader.log_message(f"{display_name} 获取价格失败，跳过当前交易")
                     continue
                 
                 current_price = float(price_data['price'])
@@ -231,8 +233,8 @@ class TradingEngine:
                 
                 while self.trader.auto_trading.get(symbol, False) and not buy_order_id and buy_retry_count < max_buy_retries:
                     buy_price = current_price + 0.00000001  # 买单价格提高0.00000001
-                    # buy_order_id = self.place_single_order(symbol, buy_price, "BUY")
-                    buy_order_id = None
+                    buy_order_id = self.place_single_order(symbol, buy_price, "BUY")
+                    # buy_order_id = None
                     
                     if not buy_order_id:
                         buy_retry_count += 1
@@ -274,44 +276,71 @@ class TradingEngine:
                     self.trader.log_message(f"{display_name} 买单失败，退出交易循环")
                     break
                 
-                # 4. 获取最新价格
+                # 4. 获取最新价格（已内置重试机制）
                 price_data = self.trader.get_token_price(symbol)
                 if not price_data:
-                    self.trader.log_message(f"{display_name} 获取最新价格失败，等待1秒后重试")
-                    time.sleep(random.uniform(0, 1))
-                    continue
+                    # 卖单时如果获取不到价格，使用买单价格
+                    self.trader.log_message(f"{display_name} 获取最新价格失败，使用买单价格作为卖单价格")
+                    sell_price = buy_price
+                else:
+                    sell_price = float(price_data['price'])
                 
-                sell_price = float(price_data['price'])
-                
-                # 5. 下卖单（无限重试）- 使用最新价格-0.00000001提高撮合优先级
+                # 5. 下卖单（最多重试5次）- 使用最新价格-0.00000001提高撮合优先级
                 # 重要：买单已成交，必须确保卖出，否则资金被占用无法进行下一次交易
                 sell_order_id = None
                 sell_retry_count = 0
+                max_sell_retries = 5
+                use_wallet_balance = False  # 标记是否使用钱包接口获取的余额
                 
-                while self.trader.auto_trading.get(symbol, False) and not sell_order_id:
+                while self.trader.auto_trading.get(symbol, False) and not sell_order_id and sell_retry_count < max_sell_retries:
                     sell_price_adjusted = sell_price - 0.00000001  # 卖单价格降低0.00000001
+                    
+                    # 如果是重试且之前失败过，使用钱包接口获取实际余额
+                    if sell_retry_count > 0 and not use_wallet_balance:
+                        self.trader.log_message(f"{display_name} 卖单失败，尝试从钱包接口获取实际持有份额")
+                        
+                        # 从symbol中提取代币符号（例如 "ALPHA_372USDT" -> "ALPHA"）
+                        token_symbol = symbol.replace('USDT', '').split('_')[0]
+                        wallet_balance = self.api.get_token_balance(token_symbol)
+                        
+                        if wallet_balance > 0:
+                            # 更新 last_buy_quantity 为钱包实际余额
+                            old_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0)
+                            self.trader.tokens[symbol]['last_buy_quantity'] = wallet_balance
+                            self.trader.log_message(f"{display_name} 更新持有份额: {old_quantity} -> {wallet_balance}（来自钱包接口）")
+                            use_wallet_balance = True
+                        else:
+                            self.trader.log_message(f"{display_name} 无法从钱包获取余额，继续使用系统计算的份额")
+                    
                     sell_order_id = self.place_single_order(symbol, sell_price_adjusted, "SELL")
                     
                     if not sell_order_id:
                         sell_retry_count += 1
-                        self.trader.log_message(f"{display_name} 卖单下单失败（第{sell_retry_count}次），等待1秒后重试")
+                        self.trader.log_message(f"{display_name} 卖单下单失败（{sell_retry_count}/{max_sell_retries}），等待1秒后重试")
                         
-                        # 每10次失败记录一次警告
-                        if sell_retry_count % 10 == 0:
-                            self.trader.log_message(f"{display_name} 警告：卖单已重试{sell_retry_count}次仍未成功，继续重试...")
+                        if sell_retry_count >= max_sell_retries:
+                            self.trader.log_message(f"{display_name} 卖单下单失败{max_sell_retries}次，触发闹钟提醒，退出当前交易循环")
+                            self.trader.trade_success_flag = False
+                            # 触发闹钟
+                            self.trader.root.after(0, self.trader.play_alarm)
+                            break
                         
                         time.sleep(random.uniform(0, 1))
-                        # 重新获取最新价格
+                        # 重新获取最新价格（已内置重试机制）
                         price_data = self.trader.get_token_price(symbol)
                         if price_data:
                             sell_price = float(price_data['price'])
                         else:
-                            # 如果无法获取价格，等待更长时间后重试
-                            self.trader.log_message(f"{display_name} 无法获取价格，等待5秒后重试")
-                            time.sleep(5)
+                            # 如果无法获取价格，使用买单价格
+                            self.trader.log_message(f"{display_name} 重新获取价格失败，使用买单价格")
+                            sell_price = buy_price
                 
                 # 如果自动交易被停止，跳出外层循环
                 if not self.trader.auto_trading.get(symbol, False):
+                    break
+                
+                # 如果卖单下单失败，跳出外层循环
+                if not sell_order_id:
                     break
                 
                 self.trader.log_message(f"{display_name} 卖单下单成功，order_id: {sell_order_id}，价格为: {sell_price_adjusted}")
@@ -326,6 +355,23 @@ class TradingEngine:
                 # 一次买卖完成
                 completed_trades += 1
                 self.trader.log_message(f"{display_name} 第 {completed_trades} 次买卖完成")
+                
+                # 计算损耗（在清空数据之前）
+                if symbol in self.trader.tokens:
+                    previous_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
+                    previous_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
+                    
+                    # 计算本次交易损耗
+                    if previous_buy_amount > 0 and previous_sell_amount > 0:
+                        trade_loss = previous_buy_amount - previous_sell_amount
+                        # 使用config_manager更新损耗
+                        total_loss = self.trader.config_manager.update_trade_loss(trade_loss)
+                        self.trader.daily_trade_loss = total_loss  # 同步到trader对象
+                        self.trader.log_message(f"计算损耗: 买单成交额 {previous_buy_amount:.2f} - 卖单成交额 {previous_sell_amount:.2f} = {trade_loss:.2f} USDT")
+                        self.trader.log_message(f"累计损耗: {total_loss:.2f} USDT")
+                        
+                        # 更新损耗显示
+                        self.trader.root.after(0, self.trader.update_daily_loss_display)
                 
                 # 清空累计的买单和卖单数据（买卖完成一轮后重置）
                 if symbol in self.trader.tokens:
