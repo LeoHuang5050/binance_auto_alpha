@@ -126,7 +126,10 @@ class BinanceTrader:
         
         # 存储输入框和按钮的引用
         
-        # 加载ALPHA代币ID映射
+        # 创建界面
+        self.create_widgets()
+        
+        # 加载ALPHA代币ID映射（在GUI日志控件设置之后）
         self.alpha_id_map = self.load_alpha_id_map()
         
         # 初始化Alpha123稳定度数据客户端
@@ -138,9 +141,6 @@ class BinanceTrader:
         # 初始化交易引擎
         self.trading_engine = TradingEngine(self)
         
-        # 创建界面
-        self.create_widgets()
-        
         # 从稳定度看板添加常驻代币
         self.add_permanent_tokens_from_stability()
         
@@ -150,16 +150,95 @@ class BinanceTrader:
         self.root.after(100, self.update_daily_trade_count_display)
     
     def load_alpha_id_map(self):
-        """加载ALPHA代币ID映射"""
-        try:
-            with open('alphaIdMap.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print("未找到alphaIdMap.json文件，将使用默认映射")
-            return {"KOGE": "ALPHA_22"}
-        except Exception as e:
-            print(f"加载alphaIdMap.json失败: {e}")
-            return {"KOGE": "ALPHA_22"}
+        """加载ALPHA代币ID映射，每天只更新一次，如果当天已更新则直接读取文件"""
+        from datetime import datetime
+        
+        # 检查是否需要更新（每天一次）
+        need_update = False
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        # 检查alphaIdMap.json是否存在
+        if not os.path.exists('alphaIdMap.json'):
+            need_update = True
+            print("未找到alphaIdMap.json文件，需要从API获取...")
+            self.logger.log_message("未找到alphaIdMap.json文件，需要从API获取...")
+        else:
+            # 检查文件修改时间是否为今天
+            try:
+                file_mtime = datetime.fromtimestamp(os.path.getmtime('alphaIdMap.json'))
+                file_date = file_mtime.strftime('%Y-%m-%d')
+                
+                if file_date != today:
+                    need_update = True
+                    print(f"Alpha ID映射文件不是今天的（文件日期: {file_date}），需要更新...")
+                    self.logger.log_message(f"Alpha ID映射文件不是今天的（文件日期: {file_date}），需要更新...")
+                else:
+                    print("Alpha ID映射文件是今天的，直接加载...")
+                    self.logger.log_message("Alpha ID映射文件是今天的，直接加载...")
+            except Exception as e:
+                print(f"检查文件时间失败: {e}，尝试从API获取...")
+                self.logger.log_message(f"检查文件时间失败: {e}，尝试从API获取...")
+                need_update = True
+        
+        # 如果需要更新，从API获取最新数据
+        if need_update:
+            try:
+                print("正在从币安API获取最新代币列表...")
+                self.logger.log_message("正在从币安API获取最新代币列表...")
+                token_data = self.api.get_binance_token_list()
+                alpha_id_map = self.api.create_alpha_id_map(token_data)
+                
+                # 保存映射到文件
+                with open('alphaIdMap.json', 'w', encoding='utf-8') as f:
+                    json.dump(alpha_id_map, f, indent=2, ensure_ascii=False)
+                
+                success_msg = f"✅ 成功从API获取并保存Alpha ID映射，包含 {len(alpha_id_map)} 个代币"
+                print(success_msg)
+                self.logger.log_message(success_msg)
+                return alpha_id_map
+                
+            except Exception as e:
+                error_msg = f"从API获取代币列表失败: {e}"
+                print(error_msg)
+                self.logger.log_message(error_msg)
+                print("尝试加载现有文件作为备用...")
+                self.logger.log_message("尝试加载现有文件作为备用...")
+                
+                # 如果API调用失败，尝试加载现有文件
+                if os.path.exists('alphaIdMap.json'):
+                    try:
+                        with open('alphaIdMap.json', 'r', encoding='utf-8') as f:
+                            existing_map = json.load(f)
+                            backup_msg = f"已加载现有Alpha ID映射作为备用，包含 {len(existing_map)} 个代币"
+                            print(backup_msg)
+                            self.logger.log_message(backup_msg)
+                            return existing_map
+                    except Exception as file_e:
+                        print(f"加载现有文件失败: {file_e}")
+                        self.logger.log_message(f"加载现有文件失败: {file_e}")
+                        print("使用默认映射")
+                        self.logger.log_message("使用默认映射")
+                        return {"KOGE": "ALPHA_22"}
+                else:
+                    print("未找到现有文件，使用默认映射")
+                    self.logger.log_message("未找到现有文件，使用默认映射")
+                    return {"KOGE": "ALPHA_22"}
+        else:
+            # 直接加载现有文件
+            try:
+                with open('alphaIdMap.json', 'r', encoding='utf-8') as f:
+                    existing_map = json.load(f)
+                    load_msg = f"✅ 已加载现有Alpha ID映射，包含 {len(existing_map)} 个代币"
+                    print(load_msg)
+                    self.logger.log_message(load_msg)
+                    return existing_map
+            except Exception as e:
+                error_msg = f"加载现有文件失败: {e}"
+                print(error_msg)
+                self.logger.log_message(error_msg)
+                print("使用默认映射")
+                self.logger.log_message("使用默认映射")
+                return {"KOGE": "ALPHA_22"}
     
     def add_permanent_tokens_from_stability(self):
         """从稳定度看板添加常驻代币"""
@@ -412,6 +491,18 @@ class BinanceTrader:
         )
         stability_btn.pack(side='left', padx=5)
         
+        # 取消所有订单按钮
+        cancel_orders_btn = tk.Button(
+            control_frame,
+            text="取消所有订单",
+            command=self.cancel_all_orders,
+            bg='#e74c3c',
+            fg='white',
+            font=('Arial', 12, 'bold'),
+            padx=20
+        )
+        cancel_orders_btn.pack(side='left', padx=5)
+        
         # 认证信息过期显示（单独一行）
         auth_info_frame = tk.Frame(self.root, bg='#f0f0f0')
         auth_info_frame.pack(fill='x', padx=10, pady=(0, 5))
@@ -510,7 +601,7 @@ class BinanceTrader:
             bg='#f0f0f0'
         ).pack(side='left', padx=(0, 5))
         
-        self.trading_count_var = tk.StringVar(value="8")
+        self.trading_count_var = tk.StringVar(value="16")
         trading_count_entry = tk.Entry(
             trading_4x_frame,
             textvariable=self.trading_count_var,
@@ -952,6 +1043,7 @@ class BinanceTrader:
             # 更新本地认证信息
             self.csrf_token = csrf_token
             self.cookie = cookie
+            self.config_manager.extra_headers = extra_headers
             
             # 重新创建API实例（使用新的认证信息）
             self.api = BinanceAPI(
@@ -961,6 +1053,12 @@ class BinanceTrader:
                 logger=self.logger,
                 extra_headers=extra_headers
             )
+            
+            # 更新依赖组件的API引用
+            if hasattr(self, 'trading_engine'):
+                self.trading_engine.api = self.api
+            if hasattr(self, 'order_handler'):
+                self.order_handler.api = self.api
             
             self.log_message("认证信息设置成功并已保存")
             self.log_message(f"已提取: cookie, csrftoken, device-info, fvideo-id, bnc-uuid 等字段")
@@ -1053,8 +1151,41 @@ class BinanceTrader:
         # 查找对应的ALPHA ID
         alpha_id = self.alpha_id_map.get(symbol)
         if not alpha_id:
-            messagebox.showerror("错误", f"未找到代币 {symbol} 的ALPHA ID，请检查代币名称")
-            return
+            # 如果找不到代币，尝试更新Alpha ID映射
+            print(f"未找到代币 {symbol} 的ALPHA ID，尝试更新代币列表...")
+            self.logger.log_message(f"未找到代币 {symbol} 的ALPHA ID，尝试更新代币列表...")
+            
+            try:
+                # 强制更新Alpha ID映射
+                token_data = self.api.get_binance_token_list()
+                updated_alpha_id_map = self.api.create_alpha_id_map(token_data)
+                
+                # 更新内存中的映射
+                self.alpha_id_map = updated_alpha_id_map
+                
+                # 保存到文件
+                with open('alphaIdMap.json', 'w', encoding='utf-8') as f:
+                    json.dump(updated_alpha_id_map, f, indent=2, ensure_ascii=False)
+                
+                update_msg = f"✅ 已更新Alpha ID映射，包含 {len(updated_alpha_id_map)} 个代币"
+                print(update_msg)
+                self.logger.log_message(update_msg)
+                
+                # 再次查找代币
+                alpha_id = self.alpha_id_map.get(symbol)
+                if not alpha_id:
+                    messagebox.showerror("错误", f"更新后仍未找到代币 {symbol} 的ALPHA ID，请检查代币名称是否正确")
+                    return
+                else:
+                    print(f"更新后找到代币 {symbol} 的ALPHA ID: {alpha_id}")
+                    self.logger.log_message(f"更新后找到代币 {symbol} 的ALPHA ID: {alpha_id}")
+                    
+            except Exception as e:
+                error_msg = f"更新Alpha ID映射失败: {e}"
+                print(error_msg)
+                self.logger.log_message(error_msg)
+                messagebox.showerror("错误", f"未找到代币 {symbol} 的ALPHA ID，且更新失败: {e}")
+                return
         
         alpha_symbol = f"{alpha_id}USDT"
         
@@ -1500,6 +1631,84 @@ class BinanceTrader:
             
             self.update_tree_view()
             self.log_message(f"已清空所有代币（保留了 {len(permanent_tokens)} 个稳定度看板代币）")
+    
+    def cancel_all_orders(self):
+        """取消所有订单并清理持仓"""
+        if not self.csrf_token or not self.cookie:
+            messagebox.showwarning("警告", "请先设置认证信息")
+            return
+        
+        # 确认对话框
+        result = messagebox.askyesno(
+            "确认操作", 
+            "此操作将:\n1. 取消所有未成交订单\n2. 卖出所有持有的代币\n\n确定要继续吗？",
+            icon='warning'
+        )
+        
+        if not result:
+            return
+        
+        self.log_message("开始执行取消所有订单并清理持仓...")
+        
+        # 在新线程中执行，避免阻塞UI
+        def cleanup_all():
+            try:
+                # 1. 取消所有未成交订单
+                self.log_message("正在取消所有未成交订单...")
+                cancel_success = self.api.cancel_all_orders()
+                if cancel_success:
+                    self.log_message("✅ 已取消所有未成交订单")
+                else:
+                    self.log_message("❌ 取消订单失败，继续执行清理...")
+                
+                # 等待一下，确保订单取消生效
+                time.sleep(2)
+                
+                # 2. 清理所有持仓
+                tokens_with_holdings = []
+                for symbol, token_data in self.tokens.items():
+                    last_buy_quantity = token_data.get('last_buy_quantity', 0)
+                    if last_buy_quantity > 0:
+                        tokens_with_holdings.append((symbol, token_data, last_buy_quantity))
+                
+                if tokens_with_holdings:
+                    self.log_message(f"发现 {len(tokens_with_holdings)} 个代币有持仓，开始清仓...")
+                    
+                    for symbol, token_data, quantity in tokens_with_holdings:
+                        display_name = token_data.get('display_name', symbol)
+                        self.log_message(f"{display_name} 检测到持有份额: {quantity}，正在清仓卖出...")
+                        
+                        # 使用交易引擎的清仓卖单逻辑（全局清理模式）
+                        self.trading_engine.execute_cleanup_sell_order(symbol, display_name, quantity, is_global_cleanup=True)
+                        
+                        # 每个代币之间稍微等待一下
+                        time.sleep(1)
+                else:
+                    self.log_message("✅ 无持仓代币，无需清仓")
+                
+                # 3. 停止所有自动交易
+                active_trading = []
+                for symbol in list(self.auto_trading.keys()):
+                    if self.auto_trading.get(symbol, False):
+                        active_trading.append(symbol)
+                
+                if active_trading:
+                    self.log_message(f"停止 {len(active_trading)} 个代币的自动交易...")
+                    for symbol in active_trading:
+                        self.auto_trading[symbol] = False
+                        if symbol in self.tokens:
+                            self.tokens[symbol]['auto_trading'] = False
+                    
+                    # 更新UI
+                    self.root.after(0, self.update_tree_view)
+                
+                self.log_message("✅ 取消所有订单并清理持仓完成")
+                
+            except Exception as e:
+                self.log_message(f"❌ 清理过程中出现异常: {str(e)}")
+        
+        # 启动清理线程
+        threading.Thread(target=cleanup_all, daemon=True).start()
     
     def refresh_single_token(self, symbol):
         """刷新单个代币价格"""

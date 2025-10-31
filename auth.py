@@ -24,6 +24,7 @@ class AuthManager:
         # 默认允许的MAC地址哈希值列表
         self.allowed_mac_hashes = allowed_mac_hashes or [
             "3a36b385f3a6953d8c732bea92e3ca2a",  # 当前电脑的MAC地址哈希
+            "2ff4edfe759a68aab3016c473354fb31",
             "188a66fe2f45fb0dc42d8b67d9abdc3a",  # 新增MAC地址1
             "c99cfed938c7e379ed5f73cb2f14ad61",  # 新增MAC地址2
             "68c3110ad7fc78479caf1442f11faf84",  # 新增MAC地址3

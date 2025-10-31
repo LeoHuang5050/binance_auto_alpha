@@ -172,6 +172,12 @@ class TradingEngine:
             if symbol in self.trader.trading_threads:
                 # 这里可以添加停止线程的逻辑
                 pass
+            
+            self.trader.log_message(f"{display_name} 自动交易停止中，正在清理持仓...")
+            
+            # 执行停止清理逻辑
+            self.stop_trading_cleanup(symbol, display_name)
+            
             self.trader.log_message(f"{display_name} 自动交易已停止")
             
             # 更新表格显示
@@ -199,6 +205,187 @@ class TradingEngine:
             # 更新表格显示
             self.trader.update_tree_view()
     
+    def stop_trading_cleanup(self, symbol, display_name):
+        """
+        停止交易时的清理逻辑
+        
+        Args:
+            symbol: 交易对符号
+            display_name: 显示名称
+        """
+        try:
+            # 1. 取消所有未成交的订单
+            self.trader.log_message(f"{display_name} 正在取消所有未成交订单...")
+            cancel_success = self.api.cancel_all_orders()
+            if cancel_success:
+                self.trader.log_message(f"{display_name} 已取消所有未成交订单")
+            else:
+                self.trader.log_message(f"{display_name} 取消订单失败，继续执行清理...")
+            
+            # 等待一下，确保订单取消生效
+            time.sleep(1)
+            
+            # 2. 检查是否持有代币，如果有则卖出
+            last_buy_quantity = self.trader.tokens[symbol].get('last_buy_quantity', 0)
+            if last_buy_quantity > 0:
+                self.trader.log_message(f"{display_name} 检测到持有份额: {last_buy_quantity}，正在清仓卖出...")
+                
+                # 使用和正常交易一样的卖单逻辑
+                self.execute_cleanup_sell_order(symbol, display_name, last_buy_quantity)
+            else:
+                self.trader.log_message(f"{display_name} 无持仓，无需清仓")
+                
+        except Exception as e:
+            self.trader.log_message(f"{display_name} 停止清理过程中出现异常: {str(e)}")
+    
+    def execute_cleanup_sell_order(self, symbol, display_name, quantity, is_global_cleanup=False):
+        """
+        执行清仓卖单，使用和正常交易一样的逻辑
+        
+        Args:
+            symbol: 交易对符号
+            display_name: 显示名称
+            quantity: 卖出数量
+            is_global_cleanup: 是否为全局清理（不检查自动交易状态）
+        """
+        try:
+            # 获取当前价格
+            price_data = self.api.get_token_price(symbol)
+            if not price_data or not price_data.get('price'):
+                self.trader.log_message(f"{display_name} 无法获取当前价格，跳过清仓")
+                return
+            
+            sell_price = float(price_data['price'])
+            self.trader.log_message(f"{display_name} 获取到当前价格: {sell_price}")
+            
+            # 卖单重试逻辑（和正常交易一样）
+            max_sell_retries = 5
+            sell_retry_count = 0
+            sell_order_id = None
+            use_wallet_balance = False
+            
+            while sell_retry_count < max_sell_retries and not sell_order_id:
+                sell_price_adjusted = sell_price - (0.0000001 * sell_retry_count)  # 每次重试降低价格
+                
+                # 如果是重试且之前失败过，使用钱包接口获取实际余额
+                if sell_retry_count > 0 and not use_wallet_balance:
+                    self.trader.log_message(f"{display_name} 清仓卖单失败，尝试从钱包接口获取实际持有份额")
+                    
+                    # 从symbol中提取代币符号（例如 "ALPHA_195USDT" -> "ALPHA_195"）
+                    token_symbol = symbol.replace('USDT', '')
+                    wallet_balance = self.api.get_token_balance(token_symbol)
+                    
+                    if wallet_balance > 0:
+                        # 更新数量为钱包实际余额
+                        old_quantity = quantity
+                        quantity = wallet_balance
+                        self.trader.tokens[symbol]['last_buy_quantity'] = wallet_balance
+                        self.trader.log_message(f"{display_name} 更新清仓数量: {old_quantity} -> {wallet_balance}（来自钱包接口）")
+                        use_wallet_balance = True
+                    else:
+                        self.trader.log_message(f"{display_name} 无法从钱包获取余额，继续使用系统计算的份额")
+                
+                self.trader.log_message(f"{display_name} 尝试清仓卖单，价格: {sell_price_adjusted}，数量: {quantity}")
+                sell_order_id = self.api.place_single_order(symbol, sell_price_adjusted, "SELL", None, quantity)
+                
+                if not sell_order_id:
+                    sell_retry_count += 1
+                    self.trader.log_message(f"{display_name} 清仓卖单下单失败（{sell_retry_count}/{max_sell_retries}），等待1秒后重试")
+                    
+                    if sell_retry_count >= max_sell_retries:
+                        self.trader.log_message(f"{display_name} 清仓卖单下单失败{max_sell_retries}次，停止清仓")
+                        return
+                    
+                    time.sleep(random.uniform(0, 1))
+                    # 重新获取最新价格
+                    price_data = self.api.get_token_price(symbol)
+                    if price_data and price_data.get('price'):
+                        sell_price = float(price_data['price'])
+                        self.trader.log_message(f"{display_name} 重新获取价格: {sell_price}")
+                    else:
+                        self.trader.log_message(f"{display_name} 重新获取价格失败，使用原价格")
+            
+            if sell_order_id:
+                self.trader.log_message(f"{display_name} 清仓卖单下单成功，order_id: {sell_order_id}，价格: {sell_price_adjusted}")
+                
+                # 根据是否为全局清理选择不同的订单状态检查逻辑
+                if is_global_cleanup:
+                    # 全局清理：使用简化的状态检查（不检查自动交易状态）
+                    sell_filled = self.check_cleanup_order_status(sell_order_id, display_name, "SELL")
+                else:
+                    # 单个代币停止：使用正常的订单状态检查逻辑
+                    sell_filled = self.trader.order_handler.handle_order_status(symbol, sell_order_id, display_name, "SELL")
+                
+                if sell_filled:
+                    # 清零持有份额
+                    self.trader.tokens[symbol]['last_buy_quantity'] = 0
+                    self.trader.tokens[symbol]['last_buy_amount'] = 0
+                    self.trader.log_message(f"{display_name} 清仓完成，已清零持有份额")
+                else:
+                    self.trader.log_message(f"{display_name} 清仓卖单未成交或被取消")
+            
+        except Exception as e:
+            self.trader.log_message(f"{display_name} 执行清仓卖单异常: {str(e)}")
+    
+    def check_cleanup_order_status(self, order_id, display_name, side, check_count=0, max_checks=5):
+        """
+        检查清仓订单状态（简化版，不检查自动交易状态）
+        
+        Args:
+            order_id: 订单ID
+            display_name: 显示名称
+            side: 订单方向
+            check_count: 当前检查次数
+            max_checks: 最大检查次数
+            
+        Returns:
+            bool: 订单成交返回True，否则返回False
+        """
+        try:
+            # 等待随机时间（和正常流程一样）
+            time.sleep(random.uniform(1, 2))
+            
+            # 检查订单状态
+            order_status = self.api.check_single_order_filled(order_id)
+            self.trader.log_message(f"{display_name} 检查清仓{side}单状态: {order_status}, 检查次数: {check_count + 1}")
+            
+            if order_status == "FILLED":
+                self.trader.log_message(f"{display_name} 清仓{side}单已成交")
+                return True
+            elif order_status == "PARTIALLY_FILLED":
+                self.trader.log_message(f"{display_name} 清仓{side}单部分成交")
+                return True  # 部分成交也算成功
+            elif order_status in ["CANCELED", "REJECTED", "EXPIRED"]:
+                self.trader.log_message(f"{display_name} 清仓{side}单失败，状态: {order_status}")
+                return False
+            else:
+                # 未成交，检查次数是否达到上限
+                if check_count + 1 < max_checks:
+                    self.trader.log_message(f"{display_name} 清仓{side}单尚未成交，2秒后继续检查")
+                    return self.check_cleanup_order_status(order_id, display_name, side, check_count + 1, max_checks)
+                else:
+                    self.trader.log_message(f"{display_name} 清仓{side}单约10秒未成交，取消订单")
+                    try:
+                        self.api.cancel_all_orders()
+                        # 取消后等待2秒，然后双重检查订单状态
+                        time.sleep(2)
+                        self.trader.log_message(f"{display_name} 取消后双重检查清仓订单状态")
+                        final_status = self.api.check_single_order_filled(order_id)
+                        
+                        if final_status in ["FILLED", "PARTIALLY_FILLED"]:
+                            self.trader.log_message(f"{display_name} 清仓订单在取消前已成交，状态: {final_status}")
+                            return True
+                        else:
+                            self.trader.log_message(f"{display_name} 清仓订单确认未成交，状态: {final_status}")
+                            return False
+                    except Exception as e:
+                        self.trader.log_message(f"{display_name} 取消清仓订单异常: {str(e)}")
+                        return False
+                        
+        except Exception as e:
+            self.trader.log_message(f"{display_name} 检查清仓订单状态异常: {str(e)}")
+            return False
+    
     def auto_trade_worker(self, symbol):
         """
         自动交易工作线程 - 单向交易模式
@@ -207,6 +394,7 @@ class TradingEngine:
             symbol: 交易对符号
         """
         trade_count = self.trader.tokens[symbol].get('trade_count', 1)
+        initial_trade_count = trade_count  # 保存初始计划的交易次数
         completed_trades = 0
         display_name = self.trader.tokens[symbol].get('display_name', symbol)
         
@@ -225,14 +413,14 @@ class TradingEngine:
                     continue
                 
                 current_price = float(price_data['price'])
-                
+                time.sleep(random.uniform(1, 2))
                 # 2. 下买单（重试机制，最多5次）- 使用最新价格+0.00000001提高撮合优先级
                 buy_order_id = None
                 buy_retry_count = 0
                 max_buy_retries = 5
                 
                 while self.trader.auto_trading.get(symbol, False) and not buy_order_id and buy_retry_count < max_buy_retries:
-                    buy_price = current_price + 0.00000001  # 买单价格提高0.00000001
+                    buy_price = current_price + 0.0000001  # 买单价格提高0.00000001
                     buy_order_id = self.place_single_order(symbol, buy_price, "BUY")
                     # buy_order_id = None
                     
@@ -291,16 +479,17 @@ class TradingEngine:
                 sell_retry_count = 0
                 max_sell_retries = 5
                 use_wallet_balance = False  # 标记是否使用钱包接口获取的余额
+                time.sleep(random.uniform(1, 2))
                 
                 while self.trader.auto_trading.get(symbol, False) and not sell_order_id and sell_retry_count < max_sell_retries:
-                    sell_price_adjusted = sell_price - 0.00000001  # 卖单价格降低0.00000001
+                    sell_price_adjusted = sell_price - 0.0000001  # 卖单价格降低0.00000001
                     
                     # 如果是重试且之前失败过，使用钱包接口获取实际余额
                     if sell_retry_count > 0 and not use_wallet_balance:
                         self.trader.log_message(f"{display_name} 卖单失败，尝试从钱包接口获取实际持有份额")
                         
-                        # 从symbol中提取代币符号（例如 "ALPHA_372USDT" -> "ALPHA"）
-                        token_symbol = symbol.replace('USDT', '').split('_')[0]
+                        # 从symbol中提取代币符号（例如 "ALPHA_195USDT" -> "ALPHA_195"）
+                        token_symbol = symbol.replace('USDT', '')
                         wallet_balance = self.api.get_token_balance(token_symbol)
                         
                         if wallet_balance > 0:
@@ -355,6 +544,7 @@ class TradingEngine:
                 # 一次买卖完成
                 completed_trades += 1
                 self.trader.log_message(f"{display_name} 第 {completed_trades} 次买卖完成")
+                time.sleep(random.uniform(2, 3))
                 
                 # 计算损耗（在清空数据之前）
                 if symbol in self.trader.tokens:
@@ -396,8 +586,14 @@ class TradingEngine:
         self.trader.auto_trading[symbol] = False
         self.trader.tokens[symbol]['auto_trading'] = False
         
+        # 检查是否提前退出（未完成所有计划的交易）
+        if completed_trades < initial_trade_count:
+            remaining_trades = initial_trade_count - completed_trades
+            self.trader.tokens[symbol]['trade_count'] = remaining_trades
+            self.trader.log_message(f"{display_name} 自动交易中途退出，已完成 {completed_trades}/{initial_trade_count} 次，剩余交易次数已更新为 {remaining_trades}")
+        else:
+            self.trader.log_message(f"{display_name} 自动交易完成，共完成 {completed_trades} 次交易")
+        
         # 更新表格显示
         self.trader.root.after(0, lambda: self.trader.update_tree_view())
-        
-        self.trader.log_message(f"{display_name} 自动交易完成，共完成 {completed_trades} 次交易")
 

@@ -6,6 +6,7 @@ Binance API Module for Binance Auto Trade System
 """
 
 import requests
+import json
 from decimal import Decimal, ROUND_DOWN
 from logger import Logger
 
@@ -684,44 +685,133 @@ class BinanceAPI:
     
     def get_token_balance(self, symbol):
         """
-        获取指定代币的钱包余额
+        获取指定代币的钱包余额（新资产接口）
         
         Args:
-            symbol: 代币符号（例如 "AOP"）
-            
+            symbol: 原始代币符号（例如 "MERL"）。
+                   若传入类似 "ALPHA_195"，将尝试从 alphaIdMap.json 反查为原始符号。
+        
         Returns:
             float: 代币数量，未找到或失败返回0
         """
         try:
-            url = "https://www.binance.com/bapi/defi/v1/private/wallet-direct/cloud-wallet/alpha"
+            # 若传入的是 ALPHA_###，尝试反查为原始代币名（如 MERL）
+            search_asset = symbol
+            try:
+                if isinstance(symbol, str) and symbol.startswith("ALPHA_"):
+                    with open('alphaIdMap.json', 'r', encoding='utf-8') as f:
+                        alpha_map = json.load(f)
+                    # 反向映射
+                    for k, v in alpha_map.items():
+                        if v == symbol:
+                            search_asset = k
+                            break
+            except Exception:
+                # 反查失败时忽略，按原值查询
+                pass
+
+            url = "https://www.binance.com/bapi/asset/v2/private/asset-service/wallet/asset"
+            params = {
+                "needAlphaAsset": "true",
+                "needEuFuture": "true",
+                "needPnl": "true",
+            }
             headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie, self.extra_headers)
-            
-            response = requests.get(url, headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                if data.get('code') == '000000':
-                    token_list = data.get('data', {}).get('list', [])
-                    
-                    for token in token_list:
-                        if token.get('symbol') == symbol:
-                            amount = float(token.get('amount', 0))
-                            self.logger.log_message(f"从钱包接口获取 {symbol} 余额: {amount}")
-                            return amount
-                    
-                    self.logger.log_message(f"钱包中未找到代币: {symbol}")
-                    return 0
-                else:
-                    self.logger.log_message(f"获取钱包余额失败: {data.get('message', '未知错误')}")
-                    return 0
-            else:
+            response = requests.get(url, headers=headers, params=params, timeout=10)
+
+            if response.status_code != 200:
                 self.logger.log_message(f"获取钱包余额请求失败: HTTP {response.status_code}")
                 return 0
-                
+
+            data = response.json()
+            assets = data.get('data') or []
+
+            # 遍历资产列表，按 asset 字段匹配（例如 MERL）
+            for item in assets:
+                if item.get('asset') == search_asset:
+                    amount_str = item.get('amount', '0') or '0'
+                    try:
+                        amount = float(amount_str)
+                    except (ValueError, TypeError):
+                        amount = 0.0
+                    self.logger.log_message(f"从钱包接口获取 {search_asset} 余额: {amount}")
+                    return amount
+
+            self.logger.log_message(f"钱包中未找到代币: {search_asset}")
+            return 0
+
         except Exception as e:
             self.logger.log_message(f"获取钱包余额异常: {str(e)}")
             return 0
+
+    def get_binance_token_list(self):
+        """
+        获取币安Alpha交易代币列表
+        
+        Returns:
+            dict: API响应数据，包含代币列表信息
+        """
+        url = "https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list"
+        
+        # 添加请求头
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Origin': 'https://www.binance.com',
+            'Referer': 'https://www.binance.com/'
+        }
+        
+        try:
+            # 发送GET请求，添加超时和SSL验证
+            response = requests.get(url, headers=headers, timeout=10, verify=True)
+            
+            # 检查响应状态
+            if response.status_code != 200:
+                raise Exception(f"API请求失败，状态码: {response.status_code}")
+            
+            # 解析JSON响应
+            data = response.json()
+            
+            # 检查API响应是否成功
+            if not data.get('success'):
+                raise Exception(f"API返回错误: {data.get('message', '未知错误')}")
+            
+            return data
+            
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"请求错误: {e}")
+        except json.JSONDecodeError as e:
+            raise Exception(f"JSON解析错误: {e}")
+        except Exception as e:
+            raise Exception(f"获取代币列表失败: {e}")
+
+    def create_alpha_id_map(self, token_list_data=None):
+        """
+        从代币列表数据创建Alpha ID映射
+        
+        Args:
+            token_list_data (dict, optional): 代币列表数据，如果为None则调用API获取
+        
+        Returns:
+            dict: Symbol到Alpha ID的映射
+        """
+        if token_list_data is None:
+            token_list_data = self.get_binance_token_list()
+        
+        if not token_list_data.get('data'):
+            raise Exception("代币列表数据为空")
+        
+        token_list = token_list_data['data']
+        alpha_id_map = {}
+        
+        for token in token_list:
+            symbol = token.get('symbol')
+            alpha_id = token.get('alphaId')
+            if symbol and alpha_id:
+                alpha_id_map[symbol] = alpha_id
+        
+        return alpha_id_map
 
 
 # 创建全局API实例（可选）
