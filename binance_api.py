@@ -59,7 +59,7 @@ class BinanceAPI:
             headers = {
                 'Accept': '*/*',
                 'Accept-Language': 'zh-CN,zh;q=0.9',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
             }
             
             response = requests.get(url, headers=headers, params=params, timeout=10)
@@ -285,15 +285,16 @@ class BinanceAPI:
             'Cookie': cookie,
             'csrftoken': csrf_token,
             'lang': 'zh-CN',
+            'Origin': 'https://www.binance.com',  # 添加 Origin 字段（CORS 验证需要）
             'Priority': 'u=1, i',
             'Referer': 'https://www.binance.com/zh-CN/alpha',
-            'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
+            'Sec-Ch-Ua': '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',  # 更新到 Chrome 142
             'Sec-Ch-Ua-Mobile': '?0',
             'Sec-Ch-Ua-Platform': '"Windows"',
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-origin',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',  # 更新到 Chrome 142
             'X-Passthrough-Token': '',
         }
         
@@ -308,7 +309,7 @@ class BinanceAPI:
             headers['fvideo-token'] = extra_headers['fvideo-token']
         
         if 'bnc-uuid' in extra_headers and extra_headers['bnc-uuid']:
-            headers['Bnc-Uuid'] = extra_headers['bnc-uuid']
+            headers['bnc-uuid'] = extra_headers['bnc-uuid']  # 修复：使用小写（与网页端一致）
         
         if 'user-agent' in extra_headers and extra_headers['user-agent']:
             headers['User-Agent'] = extra_headers['user-agent']
@@ -343,7 +344,7 @@ class BinanceAPI:
                 'Accept-Language': 'zh-CN,zh;q=0.9',
                 'Content-Type': 'application/json',
                 'csrftoken': self.csrf_token,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
             }
             
             # 构建请求数据
@@ -422,7 +423,7 @@ class BinanceAPI:
             )
             
             # 5. 构建请求头和payload
-            url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place"
+            url = "https://www.binance.com/bapi/asset/v1/private/alpha-trade/order/place"
             headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie, self.extra_headers)
             payload = BinanceAPI.build_order_payload(
                 symbol, side, price_formatted, quantity_formatted, 
@@ -744,6 +745,54 @@ class BinanceAPI:
             self.logger.log_message(f"获取钱包余额异常: {str(e)}")
             return 0
 
+    def get_funding_balance(self):
+        """
+        获取资金账户余额（Funding账户的USDT余额）
+        
+        Returns:
+            float: USDT余额，失败返回None
+        """
+        try:
+            url = "https://www.binance.com/bapi/asset/v3/private/asset-service/wallet/wallet-group"
+            params = {
+                'quoteAsset': 'USDT',
+                'needAlphaAsset': 'true',
+                'needEuFuture': 'true'
+            }
+            headers = BinanceAPI.build_request_headers(self.csrf_token, self.cookie, self.extra_headers)
+            
+            response = requests.get(url, headers=headers, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get('code') == '000000' and 'data' in data:
+                    for wallet_group in data['data']:
+                        wallet_type = wallet_group.get('walletGroupType')
+                        if wallet_type == 'Funding':
+                            total_balance = wallet_group.get('totalBalance')
+                            if total_balance:
+                                try:
+                                    balance = float(total_balance)
+                                    self.logger.log_message(f"获取资金账户余额: {balance} USDT")
+                                    return balance
+                                except (ValueError, TypeError):
+                                    self.logger.log_message(f"资金账户余额格式错误: {total_balance}")
+                                    return None
+                    
+                    self.logger.log_message("未找到资金账户(Funding)")
+                    return None
+                else:
+                    self.logger.log_message(f"获取资金账户余额失败: {data.get('message', '未知错误')}")
+                    return None
+            else:
+                self.logger.log_message(f"获取资金账户余额请求失败: HTTP {response.status_code}")
+                return None
+                
+        except Exception as e:
+            self.logger.log_message(f"获取资金账户余额异常: {str(e)}")
+            return None
+
     def get_binance_token_list(self):
         """
         获取币安Alpha交易代币列表
@@ -755,7 +804,7 @@ class BinanceAPI:
         
         # 添加请求头
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
             'Accept': 'application/json',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             'Origin': 'https://www.binance.com',

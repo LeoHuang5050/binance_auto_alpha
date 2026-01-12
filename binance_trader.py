@@ -144,10 +144,15 @@ class BinanceTrader:
         # 从稳定度看板添加常驻代币
         self.add_permanent_tokens_from_stability()
         
-        # 延迟更新今日交易总额和损耗显示，确保界面已完全创建
+        # 延迟更新统计数据显示，确保界面已完全创建
         self.root.after(100, self.update_daily_total_display)
         self.root.after(100, self.update_daily_loss_display)
         self.root.after(100, self.update_daily_trade_count_display)
+        self.root.after(100, self.update_daily_initial_balance_display)
+        self.root.after(100, self.update_daily_end_balance_display)
+        
+        # 延迟获取当天初始资金（确保认证信息已设置）
+        self.root.after(500, self.init_daily_balance)
     
     def load_alpha_id_map(self):
         """加载ALPHA代币ID映射，每天只更新一次，如果当天已更新则直接读取文件"""
@@ -376,70 +381,84 @@ class BinanceTrader:
         )
         add_btn.pack(side='left', padx=10)
         
-        # 定时交易控件
-        tk.Label(input_frame, text="定时交易:", font=('Arial', 10), bg='#f0f0f0').pack(side='left', padx=(20, 5))
+        # 统计数据显示区域（原定时交易位置）
+        stats_frame = tk.Frame(input_frame, bg='#f0f0f0')
+        stats_frame.pack(side='left', padx=(20, 0))
         
-        # 小时输入
-        self.scheduled_hour_var = tk.StringVar(value="05")
-        hour_entry = tk.Entry(
-            input_frame, 
-            textvariable=self.scheduled_hour_var,
-            width=3,
-            font=('Arial', 10),
-            justify='center'
-        )
-        hour_entry.pack(side='left', padx=2)
-        
-        tk.Label(input_frame, text=":", font=('Arial', 10), bg='#f0f0f0').pack(side='left')
-        
-        # 分钟输入
-        self.scheduled_minute_var = tk.StringVar(value="30")
-        minute_entry = tk.Entry(
-            input_frame,
-            textvariable=self.scheduled_minute_var,
-            width=3,
-            font=('Arial', 10),
-            justify='center'
-        )
-        minute_entry.pack(side='left', padx=2)
-        
-        # 启用定时交易复选框
-        self.scheduled_trading_var = tk.BooleanVar()
-        scheduled_checkbox = tk.Checkbutton(
-            input_frame,
-            text="启用定时交易",
-            variable=self.scheduled_trading_var,
-            command=self.on_scheduled_trading_toggle,
-            font=('Arial', 10),
-            bg='#f0f0f0',
-            activebackground='#f0f0f0'
-        )
-        scheduled_checkbox.pack(side='left', padx=(10, 0))
-        
-        # 启用闹钟复选框
-        self.enable_alarm_var = tk.BooleanVar()
-        alarm_checkbox = tk.Checkbutton(
-            input_frame,
-            text="启用闹钟",
-            variable=self.enable_alarm_var,
-            font=('Arial', 10),
-            bg='#f0f0f0',
-            activebackground='#f0f0f0'
-        )
-        alarm_checkbox.pack(side='left', padx=(10, 0))
-        
-        # 停止闹钟按钮
-        self.stop_alarm_btn = tk.Button(
-            input_frame,
-            text="停止闹钟",
-            command=self.stop_alarm_manually,
-            bg='#27ae60',  # 初始绿色（没有播放）
-            fg='white',
+        # 今日初始余额
+        tk.Label(stats_frame, text="今日初始余额:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(0, 5))
+        self.daily_initial_balance_label = tk.Label(
+            stats_frame,
+            text="-- USDT",
             font=('Arial', 10, 'bold'),
-            padx=10,
+            bg='#e3f2fd',
+            fg='#1976d2',
+            relief='raised',
+            bd=1,
+            padx=8,
             pady=2
         )
-        self.stop_alarm_btn.pack(side='left', padx=(10, 0))
+        self.daily_initial_balance_label.pack(side='left', padx=2)
+        
+        # 今日结束余额
+        tk.Label(stats_frame, text="今日结束余额:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(10, 5))
+        self.daily_end_balance_label = tk.Label(
+            stats_frame,
+            text="-- USDT",
+            font=('Arial', 10, 'bold'),
+            bg='#e3f2fd',
+            fg='#1976d2',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
+        )
+        self.daily_end_balance_label.pack(side='left', padx=2)
+        
+        # 今日交易总额
+        tk.Label(stats_frame, text="今日总额:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(10, 5))
+        self.daily_total_label = tk.Label(
+            stats_frame,
+            text="0.00 USDT",
+            font=('Arial', 10, 'bold'),
+            bg='#e8f5e8',
+            fg='#27ae60',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
+        )
+        self.daily_total_label.pack(side='left', padx=2)
+        
+        # 今日损耗
+        tk.Label(stats_frame, text="今日损耗:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(10, 5))
+        self.daily_loss_label = tk.Label(
+            stats_frame,
+            text="0.00 USDT",
+            font=('Arial', 10, 'bold'),
+            bg='#ffe8e8',
+            fg='#e74c3c',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
+        )
+        self.daily_loss_label.pack(side='left', padx=2)
+        
+        # 今日交易次数
+        tk.Label(stats_frame, text="交易次数:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(10, 5))
+        self.daily_trade_count_label = tk.Label(
+            stats_frame,
+            text="0",
+            font=('Arial', 10, 'bold'),
+            bg='#fff3cd',
+            fg='#856404',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
+        )
+        self.daily_trade_count_label.pack(side='left', padx=2)
         
         # 代币列表区域
         list_frame = tk.Frame(self.root, bg='#f0f0f0')
@@ -515,75 +534,6 @@ class BinanceTrader:
             font=('Arial', 10)
         )
         self.auth_expiry_label.pack(anchor='w')
-        
-        # 今日交易总额显示
-        daily_total_frame = tk.Frame(control_frame, bg='#f0f0f0')
-        daily_total_frame.pack(side='right', padx=10)
-        
-        tk.Label(
-            daily_total_frame,
-            text="今日交易总额:",
-            font=('Arial', 12, 'bold'),
-            bg='#f0f0f0',
-            fg='#2c3e50'
-        ).pack(side='left')
-        
-        self.daily_total_label = tk.Label(
-            daily_total_frame,
-            text="0.00 USDT",
-            font=('Arial', 12, 'bold'),
-            bg='#e8f5e8',
-            fg='#27ae60',
-            relief='raised',
-            bd=2,
-            padx=10,
-            pady=5
-        )
-        self.daily_total_label.pack(side='left', padx=5)
-        
-        # 今日损耗显示
-        tk.Label(
-            daily_total_frame,
-            text="今日损耗:",
-            font=('Arial', 12, 'bold'),
-            bg='#f0f0f0',
-            fg='#2c3e50'
-        ).pack(side='left', padx=(10, 0))
-        
-        self.daily_loss_label = tk.Label(
-            daily_total_frame,
-            text="0.00 USDT",
-            font=('Arial', 12, 'bold'),
-            bg='#ffe8e8',
-            fg='#e74c3c',
-            relief='raised',
-            bd=2,
-            padx=10,
-            pady=5
-        )
-        self.daily_loss_label.pack(side='left', padx=5)
-        
-        # 今日交易次数显示
-        tk.Label(
-            daily_total_frame,
-            text="今日已完成交易次数:",
-            font=('Arial', 12, 'bold'),
-            bg='#f0f0f0',
-            fg='#2c3e50'
-        ).pack(side='left', padx=(10, 0))
-        
-        self.daily_trade_count_label = tk.Label(
-            daily_total_frame,
-            text="0",
-            font=('Arial', 12, 'bold'),
-            bg='#fff3cd',
-            fg='#856404',
-            relief='raised',
-            bd=2,
-            padx=10,
-            pady=5
-        )
-        self.daily_trade_count_label.pack(side='left', padx=5)
         
         # 4倍自动交易控制行
         trading_4x_control_frame = tk.Frame(self.root, bg='#f0f0f0')
@@ -1874,11 +1824,12 @@ class BinanceTrader:
                         expected_count = 8
                     
                     # 如果实际交易次数不等于设定次数，且启用了闹钟，播放闹钟
-                    if self.daily_completed_trades != expected_count and self.enable_alarm_var.get():
+                    enable_alarm = hasattr(self, 'enable_alarm_var') and self.enable_alarm_var.get()
+                    if self.daily_completed_trades != expected_count and enable_alarm:
                         self.play_alarm()
                         self.alarm_played_today = True
                         self.log_message(f"⚠️ 超时警告：设定时间 {scheduled_hour:02d}:{scheduled_minute:02d} 已过30分钟，今日交易次数 {self.daily_completed_trades} 不等于设定次数 {expected_count}，播放闹钟提醒！")
-                    elif self.daily_completed_trades != expected_count and not self.enable_alarm_var.get():
+                    elif self.daily_completed_trades != expected_count and not enable_alarm:
                         self.log_message(f"⚠️ 超时警告：设定时间 {scheduled_hour:02d}:{scheduled_minute:02d} 已过30分钟，今日交易次数 {self.daily_completed_trades} 不等于设定次数 {expected_count}，但闹钟未启用")
                     else:
                         self.log_message(f"今日交易次数已达到设定目标 {expected_count} 次，无需播放闹钟")
@@ -2235,6 +2186,37 @@ class BinanceTrader:
         # 保存配置
         self.config_manager.save_config()
     
+    def init_daily_balance(self):
+        """初始化当天初始资金"""
+        if not self.csrf_token or not self.cookie:
+            self.log_message("认证信息未设置，跳过获取初始资金")
+            return
+        
+        # 检查是否已经设置过当天的初始资金
+        today = datetime.now().strftime('%Y-%m-%d')
+        if (self.config_manager.daily_initial_balance is not None and 
+            self.config_manager.last_trade_date == today):
+            self.log_message(f"当天初始资金已设置: {self.config_manager.daily_initial_balance} USDT")
+            return
+        
+        # 在新线程中获取初始资金，避免阻塞UI
+        def fetch_initial_balance():
+            try:
+                self.log_message("正在获取当天初始资金...")
+                balance = self.api.get_funding_balance()
+                
+                if balance is not None:
+                    self.config_manager.set_daily_initial_balance(balance)
+                    self.log_message(f"✅ 当天初始资金已设置: {balance} USDT")
+                    # 更新显示
+                    self.root.after(0, self.update_daily_initial_balance_display)
+                else:
+                    self.log_message("⚠️ 获取初始资金失败，请稍后重试")
+            except Exception as e:
+                self.log_message(f"获取初始资金异常: {str(e)}")
+        
+        threading.Thread(target=fetch_initial_balance, daemon=True).start()
+    
     def update_daily_total_display(self):
         """更新今日交易总额显示"""
         try:
@@ -2318,6 +2300,36 @@ class BinanceTrader:
         self.daily_completed_trades = self.config_manager.increment_trade_count()
         self.root.after(0, self.update_daily_trade_count_display)
         self.log_message(f"今日已完成交易次数: {self.daily_completed_trades}")
+    
+    def update_daily_initial_balance_display(self):
+        """更新今日初始余额显示"""
+        try:
+            if hasattr(self, 'daily_initial_balance_label') and self.daily_initial_balance_label:
+                initial_balance = self.config_manager.daily_initial_balance
+                if initial_balance is not None:
+                    self.daily_initial_balance_label.config(text=f"{initial_balance:.2f} USDT")
+                else:
+                    self.daily_initial_balance_label.config(text="-- USDT")
+            else:
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_daily_initial_balance_display)
+        except Exception as e:
+            self.log_message(f"更新今日初始余额显示失败: {str(e)}")
+    
+    def update_daily_end_balance_display(self):
+        """更新今日结束余额显示"""
+        try:
+            if hasattr(self, 'daily_end_balance_label') and self.daily_end_balance_label:
+                end_balance = self.config_manager.daily_end_balance
+                if end_balance is not None:
+                    self.daily_end_balance_label.config(text=f"{end_balance:.2f} USDT")
+                else:
+                    self.daily_end_balance_label.config(text="-- USDT")
+            else:
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_daily_end_balance_display)
+        except Exception as e:
+            self.log_message(f"更新今日结束余额显示失败: {str(e)}")
     
     def update_auth_expiry_display(self):
         """更新认证信息过期显示"""

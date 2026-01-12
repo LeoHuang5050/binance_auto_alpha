@@ -35,6 +35,10 @@ class ConfigManager:
         self.daily_trade_loss = 0.0    # 今日交易损耗
         self.daily_completed_trades = 0  # 今日已完成交易次数
         self.last_trade_date = None    # 最后交易日期
+        
+        # 资金账户余额相关
+        self.daily_initial_balance = None  # 当天初始资金（USDT）
+        self.daily_end_balance = None     # 当天结束资金（USDT）
     
     def load_config(self):
         """
@@ -59,6 +63,10 @@ class ConfigManager:
                     self.daily_trade_loss = config.get('daily_trade_loss', 0.0)
                     self.daily_completed_trades = config.get('daily_completed_trades', 0)
                     self.last_trade_date = config.get('last_trade_date')
+                    
+                    # 加载资金账户余额
+                    self.daily_initial_balance = config.get('daily_initial_balance')
+                    self.daily_end_balance = config.get('daily_end_balance')
                     
                     print(f"已加载今日交易总额: {self.daily_total_amount:.2f} USDT")
                     print(f"已加载今日交易损耗: {self.daily_trade_loss:.2f} USDT")
@@ -97,7 +105,9 @@ class ConfigManager:
                 'daily_total_amount': self.daily_total_amount,
                 'daily_trade_loss': self.daily_trade_loss,
                 'daily_completed_trades': self.daily_completed_trades,
-                'last_trade_date': self.last_trade_date
+                'last_trade_date': self.last_trade_date,
+                'daily_initial_balance': self.daily_initial_balance,
+                'daily_end_balance': self.daily_end_balance
             }
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
@@ -130,6 +140,8 @@ class ConfigManager:
                 self.daily_trade_loss = 0.0
                 self.daily_completed_trades = 0
                 self.last_trade_date = today
+                self.daily_initial_balance = None
+                self.daily_end_balance = None
                 self.save_config()
                 return True
             return False
@@ -157,7 +169,7 @@ class ConfigManager:
     
     def update_trade_loss(self, loss_amount):
         """
-        更新今日交易损耗
+        更新今日交易损耗（旧方法，保留兼容性）
         
         Args:
             loss_amount: 损耗金额
@@ -168,6 +180,46 @@ class ConfigManager:
         self.daily_trade_loss += loss_amount
         self.save_config()
         return self.daily_trade_loss
+    
+    def set_daily_initial_balance(self, balance):
+        """
+        设置当天初始资金
+        
+        Args:
+            balance: 初始资金余额（USDT）
+        """
+        self.daily_initial_balance = balance
+        self.last_trade_date = datetime.now().strftime('%Y-%m-%d')
+        self.save_config()
+        if self.logger:
+            self.logger.log_message(f"设置当天初始资金: {balance} USDT")
+    
+    def update_loss_from_balance(self, current_balance):
+        """
+        根据当前余额更新损耗
+        
+        Args:
+            current_balance: 当前资金账户余额（USDT）
+            
+        Returns:
+            float: 计算后的损耗，如果初始余额不存在则返回None
+        """
+        if self.daily_initial_balance is None:
+            if self.logger:
+                self.logger.log_message("未设置初始资金，无法计算损耗")
+            return None
+        
+        # 计算损耗：初始资金 - 当前余额
+        loss = self.daily_initial_balance - current_balance
+        self.daily_trade_loss = loss
+        self.daily_end_balance = current_balance
+        self.last_trade_date = datetime.now().strftime('%Y-%m-%d')
+        self.save_config()
+        
+        if self.logger:
+            self.logger.log_message(f"更新损耗: 初始资金={self.daily_initial_balance} USDT, 当前余额={current_balance} USDT, 损耗={loss:.2f} USDT")
+        
+        return loss
     
     def increment_trade_count(self):
         """

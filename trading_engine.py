@@ -265,7 +265,7 @@ class TradingEngine:
             use_wallet_balance = False
             
             while sell_retry_count < max_sell_retries and not sell_order_id:
-                sell_price_adjusted = sell_price - (0.0000001 * sell_retry_count)  # 每次重试降低价格
+                sell_price_adjusted = sell_price - (0.000001 * sell_retry_count)  # 每次重试降低价格
                 
                 # 如果是重试且之前失败过，使用钱包接口获取实际余额
                 if sell_retry_count > 0 and not use_wallet_balance:
@@ -386,6 +386,22 @@ class TradingEngine:
             self.trader.log_message(f"{display_name} 检查清仓订单状态异常: {str(e)}")
             return False
     
+    def update_loss_from_balance(self):
+        """从资金账户余额更新损耗"""
+        try:
+            current_balance = self.api.get_funding_balance()
+            if current_balance is not None:
+                loss = self.trader.config_manager.update_loss_from_balance(current_balance)
+                if loss is not None:
+                    self.trader.daily_trade_loss = loss  # 同步到trader对象
+                    # 更新损耗显示和结束余额显示
+                    self.trader.root.after(0, self.trader.update_daily_loss_display)
+                    self.trader.root.after(0, self.trader.update_daily_end_balance_display)
+            else:
+                self.trader.log_message("获取资金账户余额失败，无法更新损耗")
+        except Exception as e:
+            self.trader.log_message(f"更新损耗异常: {str(e)}")
+    
     def auto_trade_worker(self, symbol):
         """
         自动交易工作线程 - 单向交易模式
@@ -420,7 +436,7 @@ class TradingEngine:
                 max_buy_retries = 5
                 
                 while self.trader.auto_trading.get(symbol, False) and not buy_order_id and buy_retry_count < max_buy_retries:
-                    buy_price = current_price + 0.0000001  # 买单价格提高0.00000001
+                    buy_price = current_price + 0.00001  # 买单价格提高0.000001
                     buy_order_id = self.place_single_order(symbol, buy_price, "BUY")
                     # buy_order_id = None
                     
@@ -482,7 +498,7 @@ class TradingEngine:
                 time.sleep(random.uniform(1, 2))
                 
                 while self.trader.auto_trading.get(symbol, False) and not sell_order_id and sell_retry_count < max_sell_retries:
-                    sell_price_adjusted = sell_price - 0.0000001  # 卖单价格降低0.00000001
+                    sell_price_adjusted = sell_price - 0.00001  # 卖单价格降低0.000001
                     
                     # 如果是重试且之前失败过，使用钱包接口获取实际余额
                     if sell_retry_count > 0 and not use_wallet_balance:
@@ -544,24 +560,14 @@ class TradingEngine:
                 # 一次买卖完成
                 completed_trades += 1
                 self.trader.log_message(f"{display_name} 第 {completed_trades} 次买卖完成")
+                
+                # 增加今日交易次数统计
+                self.trader.increment_daily_trade_count()
+                
                 time.sleep(random.uniform(2, 3))
                 
-                # 计算损耗（在清空数据之前）
-                if symbol in self.trader.tokens:
-                    previous_buy_amount = self.trader.tokens[symbol].get('last_buy_amount', 0.0)
-                    previous_sell_amount = self.trader.tokens[symbol].get('last_sell_amount', 0.0)
-                    
-                    # 计算本次交易损耗
-                    if previous_buy_amount > 0 and previous_sell_amount > 0:
-                        trade_loss = previous_buy_amount - previous_sell_amount
-                        # 使用config_manager更新损耗
-                        total_loss = self.trader.config_manager.update_trade_loss(trade_loss)
-                        self.trader.daily_trade_loss = total_loss  # 同步到trader对象
-                        self.trader.log_message(f"计算损耗: 买单成交额 {previous_buy_amount:.2f} - 卖单成交额 {previous_sell_amount:.2f} = {trade_loss:.2f} USDT")
-                        self.trader.log_message(f"累计损耗: {total_loss:.2f} USDT")
-                        
-                        # 更新损耗显示
-                        self.trader.root.after(0, self.trader.update_daily_loss_display)
+                # 更新损耗：获取当前资金账户余额并计算损耗
+                self.update_loss_from_balance()
                 
                 # 清空累计的买单和卖单数据（买卖完成一轮后重置）
                 if symbol in self.trader.tokens:
