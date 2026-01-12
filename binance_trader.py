@@ -25,6 +25,21 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+# 导入日志模块
+from logger import Logger
+# 导入币安API模块
+from binance_api import BinanceAPI
+# 导入认证模块
+from auth import AuthManager
+# 导入Alpha123稳定度数据模块
+from alpha123 import Alpha123Client
+# 导入订单处理模块
+from order_handler import OrderHandler
+# 导入配置管理模块
+from config_manager import ConfigManager
+# 导入交易引擎模块
+from trading_engine import TradingEngine
+
 class BinanceTrader:
     def __init__(self):
         self.root = tk.Tk()
@@ -33,14 +48,42 @@ class BinanceTrader:
         self.root.configure(bg='#f0f0f0')
         
         # 居中显示主窗口
-        self.center_window(self.root, 1000, 700)
+        self.center_window(self.root, 1400, 800)
+        
+        # 初始化认证管理器
+        self.auth_manager = AuthManager()
         
         # 进行MAC地址校验
-        if not self.check_mac_permission():
+        if not self.auth_manager.check_mac_permission():
             return  # 权限校验失败，不继续初始化
+        
+        # 创建log文件夹并初始化日志管理器
+        self.log_dir = "log"
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+        
+        # 初始化日志管理器（GUI控件稍后设置）
+        self.logger = Logger(log_dir=self.log_dir)
+        
+        # 初始化配置管理器（先加载配置以获取认证信息）
+        self.config_manager = ConfigManager(config_file="config.json", logger=self.logger)
+        self.config_manager.load_config()
+        
+        # 从配置管理器获取认证信息（保留本地引用以便快速访问）
+        self.csrf_token = self.config_manager.csrf_token
+        self.cookie = self.config_manager.cookie
         
         # 币安ALPHA API基础URL
         self.base_url = "https://www.binance.com/bapi/defi/v1/public/alpha-trade"
+        
+        # 初始化币安API接口（直接传入认证信息）
+        self.api = BinanceAPI(
+            base_url=self.base_url, 
+            csrf_token=self.csrf_token,
+            cookie=self.cookie,
+            logger=self.logger,
+            extra_headers=self.config_manager.extra_headers
+        )
         
         # 存储代币数据
         self.tokens = {}
@@ -49,179 +92,164 @@ class BinanceTrader:
         self.stability_data = []
         self.stability_window = None  # 稳定度看板窗口引用
         
-        # 用户设置的CSRF token和Cookie
-        self.csrf_token = None
-        self.cookie = None
+        # 从配置管理器获取统计数据（保留本地引用以便快速访问）
+        self.daily_total_amount = self.config_manager.daily_total_amount
+        self.daily_trade_loss = self.config_manager.daily_trade_loss
+        self.daily_completed_trades = self.config_manager.daily_completed_trades
+        self.last_trade_date = self.config_manager.last_trade_date
         
-        # 配置文件路径
-        self.config_file = "config.json"
-        
-        # 今日交易总额相关（先初始化默认值）
-        self.daily_total_amount = 0.0  # 今日交易总额
-        self.last_trade_date = None  # 最后交易日期
-        
-        # 加载配置（会覆盖上面的默认值）
-        self.load_config()
+        # 当前买卖交易跟踪
+        self.current_sell_amount = 0.0  # 当前买卖交易中卖单的总成交额
         
         # 自动交易状态
         self.auto_trading = {}  # 存储每个代币的自动交易状态
         self.trading_threads = {}  # 存储交易线程
         
-        # 存储输入框和按钮的引用
+        # 4倍自动交易状态
+        self.trading_4x_active = False  # 4倍自动交易是否激活
+        self.trading_4x_thread = None  # 4倍自动交易线程
         
-        # 加载ALPHA代币ID映射
-        self.alpha_id_map = self.load_alpha_id_map()
+        # 定时交易状态
+        self.scheduled_trading_enabled = False  # 定时交易是否启用
+        self.scheduled_trading_thread = None  # 定时交易检查线程
+        self.last_scheduled_date = None  # 上次执行定时交易的日期
+        
+        # 今日交易次数统计
+        # daily_completed_trades 现在由 config_manager 管理
+        self.alarm_played_today = False  # 今日是否已播放过闹钟
+        
+        # 闹钟播放状态
+        self.alarm_is_playing = False  # 闹钟是否正在播放
+        
+        # 交易成功标识
+        self.trade_success_flag = True  # 标识当前交易是否成功
+        
+        # 存储输入框和按钮的引用
         
         # 创建界面
         self.create_widgets()
+        
+        # 加载ALPHA代币ID映射（在GUI日志控件设置之后）
+        self.alpha_id_map = self.load_alpha_id_map()
+        
+        # 初始化Alpha123稳定度数据客户端
+        self.alpha123_client = Alpha123Client(logger=self.logger, alpha_id_map=self.alpha_id_map)
+        
+        # 初始化订单处理器
+        self.order_handler = OrderHandler(self)
+        
+        # 初始化交易引擎
+        self.trading_engine = TradingEngine(self)
         
         # 从稳定度看板添加常驻代币
         self.add_permanent_tokens_from_stability()
         
-        # 延迟更新今日交易总额显示，确保界面已完全创建
+        # 延迟更新统计数据显示，确保界面已完全创建
         self.root.after(100, self.update_daily_total_display)
-    
-    def get_mac_address(self):
-        """获取当前电脑的MAC地址"""
-        try:
-            # 获取MAC地址
-            mac = uuid.getnode()
-            # 转换为十六进制字符串
-            mac_str = ':'.join(('%012X' % mac)[i:i+2] for i in range(0, 12, 2))
-            return mac_str
-        except Exception as e:
-            print(f"获取MAC地址失败: {e}")
-            return None
-    
-    def get_mac_hash(self):
-        """获取MAC地址的MD5哈希值"""
-        mac = self.get_mac_address()
-        if mac:
-            return hashlib.md5(mac.encode()).hexdigest()
-        return None
-    
-    def check_mac_permission(self):
-        """检查MAC地址权限"""
-        # 允许的MAC地址哈希值列表
-        allowed_mac_hashes = [
-            "3a36b385f3a6953d8c732bea92e3ca2a",  # 当前电脑的MAC地址哈希
-            "188a66fe2f45fb0dc42d8b67d9abdc3a",  # 新增MAC地址1
-            "c99cfed938c7e379ed5f73cb2f14ad61",  # 新增MAC地址2
-            "68c3110ad7fc78479caf1442f11faf84",  # 新增MAC地址3
-            # 可以添加更多允许的MAC地址哈希值
-        ]
+        self.root.after(100, self.update_daily_loss_display)
+        self.root.after(100, self.update_daily_trade_count_display)
+        self.root.after(100, self.update_daily_initial_balance_display)
+        self.root.after(100, self.update_daily_end_balance_display)
         
-        current_mac_hash = self.get_mac_hash()
-        if not current_mac_hash:
-            self.show_permission_error("无法获取设备信息")
-            return False
-        
-        if current_mac_hash not in allowed_mac_hashes:
-            self.show_permission_error(f"设备未授权\n当前设备哈希: {current_mac_hash}")
-            return False
-        
-        print(f"MAC地址校验通过: {current_mac_hash}")
-        return True
-    
-    def show_permission_error(self, message):
-        """显示权限错误对话框"""
-        root = tk.Tk()
-        root.withdraw()  # 隐藏主窗口
-        
-        # 创建错误对话框
-        error_dialog = tk.Toplevel(root)
-        error_dialog.title("权限验证失败")
-        error_dialog.geometry("400x200")
-        error_dialog.configure(bg='#f0f0f0')
-        error_dialog.resizable(False, False)
-        
-        # 居中显示
-        screen_width = error_dialog.winfo_screenwidth()
-        screen_height = error_dialog.winfo_screenheight()
-        x = (screen_width - 400) // 2
-        y = (screen_height - 200) // 2
-        error_dialog.geometry(f"400x200+{x}+{y}")
-        
-        # 设置窗口置顶
-        error_dialog.attributes('-topmost', True)
-        
-        # 创建内容
-        frame = tk.Frame(error_dialog, bg='#f0f0f0')
-        frame.pack(expand=True, fill='both', padx=20, pady=20)
-        
-        # 错误图标和标题
-        title_label = tk.Label(
-            frame, 
-            text="❌ 无权限使用该软件", 
-            font=('Arial', 14, 'bold'),
-            fg='#e74c3c',
-            bg='#f0f0f0'
-        )
-        title_label.pack(pady=(0, 10))
-        
-        # 错误信息
-        message_label = tk.Label(
-            frame,
-            text=message,
-            font=('Arial', 10),
-            fg='#333333',
-            bg='#f0f0f0',
-            wraplength=350,
-            justify='center'
-        )
-        message_label.pack(pady=(0, 20))
-        
-        # 确定按钮
-        ok_button = tk.Button(
-            frame,
-            text="确定",
-            font=('Arial', 10, 'bold'),
-            bg='#e74c3c',
-            fg='white',
-            width=10,
-            height=2,
-            command=lambda: [error_dialog.destroy(), root.destroy(), sys.exit()]
-        )
-        ok_button.pack()
-        
-        # 绑定关闭事件
-        error_dialog.protocol("WM_DELETE_WINDOW", lambda: [error_dialog.destroy(), root.destroy(), sys.exit()])
-        
-        # 显示对话框
-        error_dialog.mainloop()
-        
-        # 自动交易状态
-        self.auto_trading = {}  # 存储每个代币的自动交易状态
-        self.trading_threads = {}  # 存储交易线程
-        
-        # 存储输入框和按钮的引用
-        
-        # 加载ALPHA代币ID映射
-        self.alpha_id_map = self.load_alpha_id_map()
-        
-        # 创建界面
-        self.create_widgets()
-        
-        # 添加常驻的KOGE代币
-        self.add_koge_token()
+        # 延迟获取当天初始资金（确保认证信息已设置）
+        self.root.after(500, self.init_daily_balance)
     
     def load_alpha_id_map(self):
-        """加载ALPHA代币ID映射"""
-        try:
-            with open('alphaIdMap.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print("未找到alphaIdMap.json文件，将使用默认映射")
-            return {"KOGE": "ALPHA_22"}
-        except Exception as e:
-            print(f"加载alphaIdMap.json失败: {e}")
-            return {"KOGE": "ALPHA_22"}
+        """加载ALPHA代币ID映射，每天只更新一次，如果当天已更新则直接读取文件"""
+        from datetime import datetime
+        
+        # 检查是否需要更新（每天一次）
+        need_update = False
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        # 检查alphaIdMap.json是否存在
+        if not os.path.exists('alphaIdMap.json'):
+            need_update = True
+            print("未找到alphaIdMap.json文件，需要从API获取...")
+            self.logger.log_message("未找到alphaIdMap.json文件，需要从API获取...")
+        else:
+            # 检查文件修改时间是否为今天
+            try:
+                file_mtime = datetime.fromtimestamp(os.path.getmtime('alphaIdMap.json'))
+                file_date = file_mtime.strftime('%Y-%m-%d')
+                
+                if file_date != today:
+                    need_update = True
+                    print(f"Alpha ID映射文件不是今天的（文件日期: {file_date}），需要更新...")
+                    self.logger.log_message(f"Alpha ID映射文件不是今天的（文件日期: {file_date}），需要更新...")
+                else:
+                    print("Alpha ID映射文件是今天的，直接加载...")
+                    self.logger.log_message("Alpha ID映射文件是今天的，直接加载...")
+            except Exception as e:
+                print(f"检查文件时间失败: {e}，尝试从API获取...")
+                self.logger.log_message(f"检查文件时间失败: {e}，尝试从API获取...")
+                need_update = True
+        
+        # 如果需要更新，从API获取最新数据
+        if need_update:
+            try:
+                print("正在从币安API获取最新代币列表...")
+                self.logger.log_message("正在从币安API获取最新代币列表...")
+                token_data = self.api.get_binance_token_list()
+                alpha_id_map = self.api.create_alpha_id_map(token_data)
+                
+                # 保存映射到文件
+                with open('alphaIdMap.json', 'w', encoding='utf-8') as f:
+                    json.dump(alpha_id_map, f, indent=2, ensure_ascii=False)
+                
+                success_msg = f"✅ 成功从API获取并保存Alpha ID映射，包含 {len(alpha_id_map)} 个代币"
+                print(success_msg)
+                self.logger.log_message(success_msg)
+                return alpha_id_map
+                
+            except Exception as e:
+                error_msg = f"从API获取代币列表失败: {e}"
+                print(error_msg)
+                self.logger.log_message(error_msg)
+                print("尝试加载现有文件作为备用...")
+                self.logger.log_message("尝试加载现有文件作为备用...")
+                
+                # 如果API调用失败，尝试加载现有文件
+                if os.path.exists('alphaIdMap.json'):
+                    try:
+                        with open('alphaIdMap.json', 'r', encoding='utf-8') as f:
+                            existing_map = json.load(f)
+                            backup_msg = f"已加载现有Alpha ID映射作为备用，包含 {len(existing_map)} 个代币"
+                            print(backup_msg)
+                            self.logger.log_message(backup_msg)
+                            return existing_map
+                    except Exception as file_e:
+                        print(f"加载现有文件失败: {file_e}")
+                        self.logger.log_message(f"加载现有文件失败: {file_e}")
+                        print("使用默认映射")
+                        self.logger.log_message("使用默认映射")
+                        return {"KOGE": "ALPHA_22"}
+                else:
+                    print("未找到现有文件，使用默认映射")
+                    self.logger.log_message("未找到现有文件，使用默认映射")
+                    return {"KOGE": "ALPHA_22"}
+        else:
+            # 直接加载现有文件
+            try:
+                with open('alphaIdMap.json', 'r', encoding='utf-8') as f:
+                    existing_map = json.load(f)
+                    load_msg = f"✅ 已加载现有Alpha ID映射，包含 {len(existing_map)} 个代币"
+                    print(load_msg)
+                    self.logger.log_message(load_msg)
+                    return existing_map
+            except Exception as e:
+                error_msg = f"加载现有文件失败: {e}"
+                print(error_msg)
+                self.logger.log_message(error_msg)
+                print("使用默认映射")
+                self.logger.log_message("使用默认映射")
+                return {"KOGE": "ALPHA_22"}
     
     def add_permanent_tokens_from_stability(self):
         """从稳定度看板添加常驻代币"""
         try:
             # 获取稳定度看板数据
-            stability_data = self.fetch_stability_data()
+            stability_data = self.alpha123_client.fetch_stability_data()
             if not stability_data:
                 self.log_message("无法获取稳定度看板数据，将只添加KOGE代币")
                 self.add_koge_token()
@@ -256,7 +284,9 @@ class BinanceTrader:
                     'trade_amount': 0.0,
                     'auto_trading': False,
                     'change_24h': 0.0,  # 稳定度看板没有24h变化数据，设为0
-                    'last_buy_quantity': 0.0  # 存储上一个买单的份额
+                    'last_buy_quantity': 0.0,  # 存储上一个买单的份额
+                    'last_buy_amount': 0.0,  # 存储上一个买单的成交额
+                    'last_sell_amount': 0.0  # 存储上一个卖单的成交额
                 }
                 added_count += 1
             
@@ -283,7 +313,10 @@ class BinanceTrader:
             'display_name': 'KOGE',
             'trade_count': 1,
             'trade_amount': 0.0,
-            'auto_trading': False
+            'auto_trading': False,
+            'last_buy_quantity': 0.0,  # 存储上一个买单的份额
+            'last_buy_amount': 0.0,  # 存储上一个买单的成交额
+            'last_sell_amount': 0.0  # 存储上一个卖单的成交额
         }
         # 更新表格显示
         self.update_tree_view()
@@ -348,15 +381,84 @@ class BinanceTrader:
         )
         add_btn.pack(side='left', padx=10)
         
-        # 状态标签
-        self.status_label = tk.Label(
-            input_frame, 
-            text="就绪", 
-            font=('Arial', 10),
-            fg='green',
-            bg='#f0f0f0'
+        # 统计数据显示区域（原定时交易位置）
+        stats_frame = tk.Frame(input_frame, bg='#f0f0f0')
+        stats_frame.pack(side='left', padx=(20, 0))
+        
+        # 今日初始余额
+        tk.Label(stats_frame, text="今日初始余额:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(0, 5))
+        self.daily_initial_balance_label = tk.Label(
+            stats_frame,
+            text="-- USDT",
+            font=('Arial', 10, 'bold'),
+            bg='#e3f2fd',
+            fg='#1976d2',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
         )
-        self.status_label.pack(side='right', padx=10)
+        self.daily_initial_balance_label.pack(side='left', padx=2)
+        
+        # 今日结束余额
+        tk.Label(stats_frame, text="今日结束余额:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(10, 5))
+        self.daily_end_balance_label = tk.Label(
+            stats_frame,
+            text="-- USDT",
+            font=('Arial', 10, 'bold'),
+            bg='#e3f2fd',
+            fg='#1976d2',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
+        )
+        self.daily_end_balance_label.pack(side='left', padx=2)
+        
+        # 今日交易总额
+        tk.Label(stats_frame, text="今日总额:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(10, 5))
+        self.daily_total_label = tk.Label(
+            stats_frame,
+            text="0.00 USDT",
+            font=('Arial', 10, 'bold'),
+            bg='#e8f5e8',
+            fg='#27ae60',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
+        )
+        self.daily_total_label.pack(side='left', padx=2)
+        
+        # 今日损耗
+        tk.Label(stats_frame, text="今日损耗:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(10, 5))
+        self.daily_loss_label = tk.Label(
+            stats_frame,
+            text="0.00 USDT",
+            font=('Arial', 10, 'bold'),
+            bg='#ffe8e8',
+            fg='#e74c3c',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
+        )
+        self.daily_loss_label.pack(side='left', padx=2)
+        
+        # 今日交易次数
+        tk.Label(stats_frame, text="交易次数:", font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50').pack(side='left', padx=(10, 5))
+        self.daily_trade_count_label = tk.Label(
+            stats_frame,
+            text="0",
+            font=('Arial', 10, 'bold'),
+            bg='#fff3cd',
+            fg='#856404',
+            relief='raised',
+            bd=1,
+            padx=8,
+            pady=2
+        )
+        self.daily_trade_count_label.pack(side='left', padx=2)
         
         # 代币列表区域
         list_frame = tk.Frame(self.root, bg='#f0f0f0')
@@ -372,10 +474,10 @@ class BinanceTrader:
         control_frame = tk.Frame(self.root, bg='#f0f0f0')
         control_frame.pack(fill='x', padx=10, pady=10)
         
-        # 设置Token按钮
+        # 设置认证信息按钮
         token_btn = tk.Button(
             control_frame,
-            text="设置Token",
+            text="设置认证信息",
             command=self.show_token_dialog,
             bg='#8e44ad',
             fg='white',
@@ -408,30 +510,67 @@ class BinanceTrader:
         )
         stability_btn.pack(side='left', padx=5)
         
-        # 今日交易总额显示
-        daily_total_frame = tk.Frame(control_frame, bg='#f0f0f0')
-        daily_total_frame.pack(side='right', padx=10)
-        
-        tk.Label(
-            daily_total_frame,
-            text="今日交易总额:",
+        # 取消所有订单按钮
+        cancel_orders_btn = tk.Button(
+            control_frame,
+            text="取消所有订单",
+            command=self.cancel_all_orders,
+            bg='#e74c3c',
+            fg='white',
             font=('Arial', 12, 'bold'),
-            bg='#f0f0f0',
-            fg='#2c3e50'
-        ).pack(side='left')
-        
-        self.daily_total_label = tk.Label(
-            daily_total_frame,
-            text="0.00 USDT",
-            font=('Arial', 12, 'bold'),
-            bg='#e8f5e8',
-            fg='#27ae60',
-            relief='raised',
-            bd=2,
-            padx=10,
-            pady=5
+            padx=20
         )
-        self.daily_total_label.pack(side='left', padx=5)
+        cancel_orders_btn.pack(side='left', padx=5)
+        
+        # 认证信息过期显示（单独一行）
+        auth_info_frame = tk.Frame(self.root, bg='#f0f0f0')
+        auth_info_frame.pack(fill='x', padx=10, pady=(0, 5))
+        
+        self.auth_expiry_label = tk.Label(
+            auth_info_frame,
+            text="正在检查认证信息...",
+            bg='#f0f0f0',
+            fg='#666666',
+            font=('Arial', 10)
+        )
+        self.auth_expiry_label.pack(anchor='w')
+        
+        # 4倍自动交易控制行
+        trading_4x_control_frame = tk.Frame(self.root, bg='#f0f0f0')
+        trading_4x_control_frame.pack(fill='x', padx=10, pady=5)
+        
+        # 4倍自动交易相关控件
+        trading_4x_frame = tk.Frame(trading_4x_control_frame, bg='#f0f0f0')
+        trading_4x_frame.pack(side='left')
+        
+        # 交易次数输入框
+        tk.Label(
+            trading_4x_frame,
+            text="交易次数:",
+            font=('Arial', 10),
+            bg='#f0f0f0'
+        ).pack(side='left', padx=(0, 5))
+        
+        self.trading_count_var = tk.StringVar(value="16")
+        trading_count_entry = tk.Entry(
+            trading_4x_frame,
+            textvariable=self.trading_count_var,
+            width=8,
+            font=('Arial', 10)
+        )
+        trading_count_entry.pack(side='left', padx=(0, 10))
+        
+        # 4倍自动交易按钮
+        self.trading_4x_btn = tk.Button(
+            trading_4x_frame,
+            text="4倍自动交易",
+            command=self.start_4x_trading,
+            bg='#27ae60',
+            fg='white',
+            font=('Arial', 12, 'bold'),
+            padx=15
+        )
+        self.trading_4x_btn.pack(side='left', padx=5)
         
         # 系统日志区域
         log_frame = tk.Frame(self.root, bg='#f0f0f0')
@@ -447,6 +586,25 @@ class BinanceTrader:
             fg='#ecf0f1'
         )
         self.log_text.pack(fill='x', pady=5)
+        
+        # 将日志控件设置到logger中
+        self.logger.set_log_widget(self.log_text)
+        
+        # 状态栏
+        status_frame = tk.Frame(self.root, bg='#2c3e50', height=30)
+        status_frame.pack(fill='x', side='bottom')
+        status_frame.pack_propagate(False)
+        
+        self.status_label = tk.Label(
+            status_frame,
+            text="就绪",
+            font=('Arial', 10),
+            fg='#ecf0f1',
+            bg='#2c3e50',
+            anchor='w',
+            padx=10
+        )
+        self.status_label.pack(fill='both', expand=True)
     
     def create_custom_table(self, parent):
         """创建自定义表格"""
@@ -558,11 +716,136 @@ class BinanceTrader:
         # 设置窗口位置
         window.geometry(f"{width}x{height}+{x}+{y}")
     
+    @staticmethod
+    def parse_request_headers(headers_text):
+        """
+        解析浏览器复制的 Request Headers 或 cURL 命令
+        
+        Args:
+            headers_text: 完整的 Request Headers 文本或 cURL 命令
+            
+        Returns:
+            dict: 解析后的headers字典，包含 cookie, csrftoken 等字段
+        """
+        headers_dict = {}
+        
+        # 检查是否是 cURL 格式
+        if headers_text.strip().startswith('curl'):
+            return BinanceTrader.parse_curl_command(headers_text)
+        else:
+            return BinanceTrader.parse_headers_format(headers_text)
+    
+    @staticmethod
+    def parse_curl_command(curl_text):
+        """
+        解析 cURL 命令格式
+        
+        Args:
+            curl_text: cURL 命令文本
+            
+        Returns:
+            dict: 解析后的headers字典
+        """
+        headers_dict = {}
+        lines = curl_text.strip().split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            
+            # 跳过空行和 curl 命令本身
+            if not line or line.startswith('curl'):
+                continue
+            
+            # 解析 -H 'header: value' 格式
+            if line.startswith("-H '") and line.endswith("' \\"):
+                # 移除开头的 -H ' 和结尾的 ' \
+                header_line = line[4:-3]
+                if ':' in header_line:
+                    parts = header_line.split(':', 1)
+                    if len(parts) == 2:
+                        key = parts[0].strip().lower()
+                        value = parts[1].strip()
+                        headers_dict[key] = value
+            
+            # 解析 -b 'cookie' 格式
+            elif line.startswith("-b '") and line.endswith("' \\"):
+                # 移除开头的 -b ' 和结尾的 ' \
+                cookie_value = line[4:-3]
+                headers_dict['cookie'] = cookie_value
+            
+            # 处理最后一行（没有 \ 结尾）
+            elif line.startswith("-H '") and line.endswith("'"):
+                header_line = line[4:-1]
+                if ':' in header_line:
+                    parts = header_line.split(':', 1)
+                    if len(parts) == 2:
+                        key = parts[0].strip().lower()
+                        value = parts[1].strip()
+                        headers_dict[key] = value
+            
+            elif line.startswith("-b '") and line.endswith("'"):
+                cookie_value = line[4:-1]
+                headers_dict['cookie'] = cookie_value
+        
+        return headers_dict
+    
+    @staticmethod
+    def parse_headers_format(headers_text):
+        """
+        解析传统的 Request Headers 格式（冒号分隔或两行格式）
+        
+        Args:
+            headers_text: Request Headers 文本
+            
+        Returns:
+            dict: 解析后的headers字典
+        """
+        headers_dict = {}
+        lines = headers_text.strip().split('\n')
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # 跳过空行和以:开头的伪头部
+            if not line or line.startswith(':'):
+                i += 1
+                continue
+            
+            # 处理两种格式：
+            # 1. 冒号分隔格式: "header-name: value"
+            # 2. 两行格式: "header-name" + "\n" + "value"
+            
+            if ':' in line:
+                # 冒号分隔格式
+                parts = line.split(':', 1)
+                if len(parts) == 2:
+                    key = parts[0].strip().lower()
+                    value = parts[1].strip()
+                    
+                    # 处理多行值（cookie特别长可能换行）
+                    while i + 1 < len(lines) and not ':' in lines[i + 1] and not lines[i + 1].startswith(':'):
+                        i += 1
+                        value += lines[i].strip()
+                    
+                    headers_dict[key] = value
+            else:
+                # 两行格式：当前行是header名称，下一行是值
+                key = line.lower()
+                if i + 1 < len(lines):
+                    i += 1
+                    value = lines[i].strip()
+                    headers_dict[key] = value
+            
+            i += 1
+        
+        return headers_dict
+    
     def show_token_dialog(self):
-        """显示Token设置对话框"""
+        """显示认证信息设置对话框"""
         dialog = tk.Toplevel(self.root)
         dialog.title("设置认证信息")
-        dialog.geometry("600x520")
+        dialog.geometry("700x650")
         dialog.configure(bg='#2c3e50')
         dialog.resizable(False, False)
         
@@ -571,7 +854,7 @@ class BinanceTrader:
         dialog.grab_set()
         
         # 居中显示对话框
-        self.center_window(dialog, 600, 520)
+        self.center_window(dialog, 700, 650)
         
         # 标题
         title_frame = tk.Frame(dialog, bg='#2c3e50', height=60)
@@ -593,7 +876,7 @@ class BinanceTrader:
         
         info_text = tk.Text(
             info_frame,
-            height=6,
+            height=7,
             font=('Arial', 10),
             bg='#34495e',
             fg='#ecf0f1',
@@ -603,90 +886,136 @@ class BinanceTrader:
         info_text.pack(fill='x')
         
         info_content = """获取认证信息的方法：
-1. 在浏览器中登录币安
-2. 按F12打开开发者工具
-3. 切换到Network标签页
-4. 在币安页面进行任何操作
-5. 找到API请求，查看Request Headers中的：
-   - csrftoken字段（第一行）
-   - Cookie字段（第二行）
-6. 复制这些值并粘贴到下方输入框"""
+                        1. 在浏览器中登录币安
+                        2. 按F12打开开发者工具
+                        3. 切换到Network标签页
+                        4. 在币安页面进行任何操作
+                        5. 找到任意API请求（如：/bapi/...），右键点击
+                        6. 选择"Copy" -> "Copy as cURL (bash)"（推荐）
+                        或选择"Copy Request Headers"
+                        7. 将复制的内容粘贴到下方文本框中
+                        8. 点击"保存"按钮
+
+                        支持的格式：
+                        • cURL命令格式（推荐）
+                        • Request Headers格式（冒号分隔）
+                        • 两行格式（header名称 + header值）"""
         
         info_text.config(state='normal')
         info_text.insert('1.0', info_content)
         info_text.config(state='disabled')
         
-        # 输入框区域
+        # Request Headers输入框区域
         input_frame = tk.Frame(dialog, bg='#2c3e50')
-        input_frame.pack(fill='x', padx=20, pady=10)
-        
-        # CSRF Token输入框
-        csrf_frame = tk.Frame(input_frame, bg='#2c3e50')
-        csrf_frame.pack(fill='x', pady=(0, 15))
+        input_frame.pack(fill='both', expand=True, padx=20, pady=10)
         
         tk.Label(
-            csrf_frame,
-            text="CSRF Token:",
+            input_frame,
+            text="Request Headers（直接粘贴完整内容）:",
             font=('Arial', 12, 'bold'),
             fg='white',
             bg='#2c3e50'
         ).pack(anchor='w', pady=(0, 5))
         
-        csrf_entry = tk.Entry(
-            csrf_frame,
-            font=('Consolas', 11),
-            width=70
+        # 创建带滚动条的文本框
+        text_frame = tk.Frame(input_frame, bg='#2c3e50')
+        text_frame.pack(fill='both', expand=True)
+        
+        scrollbar = tk.Scrollbar(text_frame)
+        scrollbar.pack(side='right', fill='y')
+        
+        headers_text = tk.Text(
+            text_frame,
+            height=20,
+            font=('Consolas', 9),
+            wrap='none',
+            yscrollcommand=scrollbar.set
         )
-        csrf_entry.pack(fill='x', pady=(0, 5))
+        headers_text.pack(side='left', fill='both', expand=True)
+        scrollbar.config(command=headers_text.yview)
         
-        # 如果已有token，显示完整token
-        if self.csrf_token:
-            csrf_entry.insert(0, self.csrf_token)
+        # 提示文本
+        placeholder = "请粘贴完整的 Request Headers...\n例如：\naccept: */*\ncookie: bnc-uuid=xxx...\ncsrftoken: xxx..."
+        headers_text.insert('1.0', placeholder)
+        headers_text.config(fg='gray')
         
-        # Cookie输入框
-        cookie_frame = tk.Frame(input_frame, bg='#2c3e50')
-        cookie_frame.pack(fill='x', pady=(0, 15))
+        def on_focus_in(event):
+            if headers_text.get('1.0', 'end-1c') == placeholder:
+                headers_text.delete('1.0', 'end')
+                headers_text.config(fg='black')
         
-        tk.Label(
-            cookie_frame,
-            text="Cookie:",
-            font=('Arial', 12, 'bold'),
-            fg='white',
-            bg='#2c3e50'
-        ).pack(anchor='w', pady=(0, 5))
+        def on_focus_out(event):
+            if not headers_text.get('1.0', 'end-1c').strip():
+                headers_text.insert('1.0', placeholder)
+                headers_text.config(fg='gray')
         
-        cookie_text = tk.Text(
-            cookie_frame,
-            height=6,
-            font=('Consolas', 10),
-            wrap='word'
-        )
-        cookie_text.pack(fill='x', pady=(0, 5))
-        
-        # 如果已有cookie，显示完整cookie
-        if self.cookie:
-            cookie_text.insert('1.0', self.cookie)
+        headers_text.bind('<FocusIn>', on_focus_in)
+        headers_text.bind('<FocusOut>', on_focus_out)
         
         # 按钮区域
         button_frame = tk.Frame(dialog, bg='#2c3e50')
         button_frame.pack(fill='x', padx=20, pady=(10, 20))
         
-        def save_tokens():
-            csrf_token = csrf_entry.get().strip()
-            cookie = cookie_text.get('1.0', 'end-1c').strip()
+        def save_headers():
+            headers_content = headers_text.get('1.0', 'end-1c').strip()
             
-            if not csrf_token:
-                messagebox.showwarning("警告", "请输入CSRF Token")
+            if not headers_content or headers_content == placeholder:
+                messagebox.showwarning("警告", "请粘贴 Request Headers")
                 return
+            
+            # 解析 headers
+            parsed_headers = self.parse_request_headers(headers_content)
+            
+            # 提取必需的字段
+            cookie = parsed_headers.get('cookie', '')
+            csrf_token = parsed_headers.get('csrftoken', '')
             
             if not cookie:
-                messagebox.showwarning("警告", "请输入Cookie")
+                messagebox.showerror("错误", "未找到 cookie 字段，请检查粘贴的内容")
                 return
             
+            if not csrf_token:
+                messagebox.showerror("错误", "未找到 csrftoken 字段，请检查粘贴的内容")
+                return
+            
+            # 提取额外的有用字段
+            extra_headers = {
+                'device-info': parsed_headers.get('device-info', ''),
+                'fvideo-id': parsed_headers.get('fvideo-id', ''),
+                'fvideo-token': parsed_headers.get('fvideo-token', ''),
+                'bnc-uuid': parsed_headers.get('bnc-uuid', ''),
+                'user-agent': parsed_headers.get('user-agent', ''),
+            }
+            
+            # 使用config_manager设置认证信息
+            self.config_manager.set_credentials(csrf_token, cookie, extra_headers)
+            
+            # 更新本地认证信息
             self.csrf_token = csrf_token
             self.cookie = cookie
-            self.save_config()  # 保存到配置文件
+            self.config_manager.extra_headers = extra_headers
+            
+            # 重新创建API实例（使用新的认证信息）
+            self.api = BinanceAPI(
+                base_url=self.base_url,
+                csrf_token=self.csrf_token,
+                cookie=self.cookie,
+                logger=self.logger,
+                extra_headers=extra_headers
+            )
+            
+            # 更新依赖组件的API引用
+            if hasattr(self, 'trading_engine'):
+                self.trading_engine.api = self.api
+            if hasattr(self, 'order_handler'):
+                self.order_handler.api = self.api
+            
             self.log_message("认证信息设置成功并已保存")
+            self.log_message(f"已提取: cookie, csrftoken, device-info, fvideo-id, bnc-uuid 等字段")
+            
+            # 更新认证信息过期显示
+            self.update_auth_expiry_display()
+            
             dialog.destroy()
         
         # 取消按钮
@@ -704,157 +1033,58 @@ class BinanceTrader:
         # 确认按钮
         confirm_btn = tk.Button(
             button_frame,
-            text="确认",
-            command=save_tokens,
-            bg='#3498db',
+            text="设置",
+            command=save_headers,
+            bg='#27ae60',
             fg='white',
             font=('Arial', 10, 'bold'),
-            padx=15
+            padx=20
         )
         confirm_btn.pack(side='right')
         
-        # 绑定回车键
-        csrf_entry.bind('<Return>', lambda e: save_tokens())
-        csrf_entry.focus()
+        # 聚焦到文本框
+        headers_text.focus()
     
     def log_message(self, message):
-        """添加日志消息"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        log_msg = f"[{timestamp}] {message}\n"
-        
-        # 检查log_text是否已创建
-        if hasattr(self, 'log_text'):
-            self.log_text.insert(tk.END, log_msg)
-            self.log_text.see(tk.END)
-            
-            # 限制日志行数
-            lines = self.log_text.get("1.0", tk.END).count('\n')
-            if lines > 100:
-                self.log_text.delete("1.0", "10.0")
-        else:
-            # 如果log_text还未创建，先打印到控制台
-            print(log_msg.strip())
+        """添加日志消息 - 调用logger模块记录日志"""
+        self.logger.log_message(message)
     
     def update_status(self, message, color='green'):
         """更新状态标签"""
         self.status_label.config(text=message, fg=color)
         self.root.update_idletasks()
     
-    def get_token_price(self, symbol):
-        """获取代币价格（使用K线接口）"""
-        try:
-            url = f"{self.base_url}/klines"
-            params = {
-                'symbol': symbol,
-                'interval': '1s',  # 1秒间隔获取最新价格
-                'limit': 1  # 只获取1条K线数据
-            }
+    def get_token_price(self, symbol, max_retries=5):
+        """
+        获取代币价格 - 调用API模块，带重试机制
+        
+        Args:
+            symbol: 代币符号，如 "ALPHA_1USDT"
+            max_retries: 最大重试次数，默认5次
             
-            # 价格获取使用公开接口，不需要认证信息
+        Returns:
+            dict: 包含价格和交易信息的字典，失败返回None
+        """
+        import time
+        import random
+        
+        for attempt in range(max_retries):
+            result = self.api.get_token_price(symbol)
+            if result:
+                return result
             
-            # 使用公开接口的请求头
-            headers = {
-                'Accept': '*/*',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'Accept-Language': 'zh-CN,zh;q=0.9',
-                'Baggage': 'sentry-environment=prod,sentry-release=20250924-d1d0004c-2900,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=847f639347bc49be967b6777b03a413c,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
-                'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-                'Clienttype': 'web',
-                'Content-Type': 'application/json',
-                'Cookie': self.cookie,
-                'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQzMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-                'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-                'lang': 'zh-CN',
-                'Priority': 'u=1, i',
-                'Referer': 'https://www.binance.com/zh-CN/alpha/bsc/0xe6df05ce8c8301223373cf5b969afcb1498c5528',
-                'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                'Sentry-Trace': '847f639347bc49be967b6777b03a413c-ac242fc8bf0e51e2-0',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
-                'X-Passthrough-Token': '',
-                'X-Trace-Id': '000f2190-8b35-4cb1-aa27-d62a5017a918',
-                'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
-            }
-            
-            # 设置cookies
-            cookies = {
-                'theme': 'dark',
-                'bnc-uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-                '_gid': 'GA1.2.951612344.1758819202',
-                'BNC_FV_KEY': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-                'ref': 'FEQE7YL0',
-                'lang': 'zh-CN',
-                'language': 'zh-CN',
-                'se_sd': 'AQPAhWVkMHTCRVWMRBgVgZZDBDA9TEQUlsN5aVEd1lcUgVVNWV4A1',
-                'se_gd': 'QZaVlDhAHQRA1IaRXUBMgZZAFVQcUBQUlpc5aVEd1lcUgG1NWVAP1',
-                'se_gsd': 'YDo2XDtWNTAgCSMrNAgnMzkECQIaBQYaV11BUl1QVllaJ1NT1',
-                'currentAccount': '',
-                'logined': 'y',
-                'BNC-Location': 'CN',
-                'aws-waf-token': '6a2e990f-c746-49ff-9096-b327596dd9d8:BgoAZZh3lccKAAAA:frs4tlGhn0srGqMVNdKjOUR6E1AopfP/a3uZHcPKLSFBKkQjYpgbOsjbsL/PuL7PzWy1a6xg+L7J/Hnb9L5xAb88hAOBFBDOL358HxuVvNgpN41Rqv/RGGnERAcxnm6cSRWMXbe+yCluzdyiGMFLc5oMXF4CTn0fUmdeBrXbkaCX0HYuT8/3xnMjVTs2E0cbasI=',
-                '_gcl_au': '1.1.1119987010.1758819849',
-                'changeBasisTimeZone': '',
-                'userPreferredCurrency': 'USD_USD',
-                'BNC_FV_KEY_T': '101-ya6ZGxeFJ63HG8vatAZthWy4Sjc5qu1P2aV50Sb2TEtgnS4ZbkrDqmNQWTQ6cP%2FyOPWacDiBfIZ8GRjL8bGDig%3D%3D-dPwS3iTPmfQHOxcm1JrBNQ%3D%3D-0e',
-                'BNC_FV_KEY_EXPIRE': '1758929057818',
-                '_uetsid': 'a955dd009a3111f08ea99b841f36689a',
-                '_uetvid': 'a955d8909a3111f08c0c25e413aeab0c',
-                's9r1': 'CA65B5057A146BFF9C192E8BD726E97A',
-                'r20t': 'web.AD47E59A1520E690EFDD909400E9E08E',
-                'r30t': '1',
-                'cr00': 'F92A672B1280C3A02CAF0E64D3756059',
-                'd1og': 'web.1162735228.F4F8D3766A63F34B04DA0A322745A3C8',
-                'r2o1': 'web.1162735228.56CD4DF4A52B7CA2AA5BE433C63EABB1',
-                'f30l': 'web.1162735228.75764A4A9618F09433B203557F3AE012',
-                'p20t': 'web.1162735228.EBF4B2B5DB6916330942ED764FAEE65E',
-                '_ga_3WP50LGEEC': 'GS2.1.s1758904316$o4$g1$t1758912362$j36$l0$h0',
-                'OptanonConsent': 'isGpcEnabled=0&datestamp=Sat+Sep+27+2025+02%3A46%3A04+GMT%2B0800+(%E4%B8%AD%E5%9B%BD%E6%A0%87%E5%87%86%E6%97%B6%E9%97%B4)&version=202506.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=7e0430b4-07eb-4780-a2e2-48b9be3dd13c&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0003%3A1%2CC0004%3A1%2CC0002%3A1&AwaitingReconsent=false',
-                '_gat_UA-162512367-1': '1',
-                '_ga': 'GA1.2.1952928982.1758819202',
-                'sensorsdata2015jssdkcross': '%7B%22distinct_id%22%3A%221162735228%22%2C%22first_id%22%3A%2219981cb2b079d5-0702e12ae9987a-26061951-3686400-19981cb2b08181c%22%2C%22props%22%3A%7B%22aws_waf_referrer%22%3A%22%7B%5C%22referrer%5C%22%3A%5C%22https%3A%2F%2Falpha123.uk%2F%5C%22%7D%22%2C%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%7D%2C%22identities%22%3A%22eyIkaWRlbnRpdHlfY29va2llX2lkIjoiMTk5ODFjYjJiMDc5ZDUtMDcwMmUxMmFlOTk4N2EtMjYwNjE5NTEtMzY4NjQwMC0xOTk4MWNiMmIwODE4MWMiLCIkaWRlbnRpdHlfbG9naW5faWQiOiIxMTYyNzM1MjI4In0%3D%22%2C%22history_login_id%22%3A%7B%22name%22%3A%22%24identity_login_id%22%2C%22value%22%3A%221162735228%22%7D%2C%22%24device_id%22%3A%2219981dc7d84bdb-0b69a1775381dc8-26061951-3686400-19981dc7d851c20%22%7D',
-                '_gat': '1'
-            }
-            
-            # 创建session并设置cookies
-            session = requests.Session()
-            session.cookies.update(cookies)
-            
-            response = session.get(url, headers=headers, params=params, timeout=10)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            if data.get('code') == '000000' and data.get('success') == True:
-                kline_data = data.get('data', [])
-                if kline_data and len(kline_data) > 0:
-                    # 解析K线数据，返回格式化的价格数据
-                    kline = kline_data[0]
-                    return {
-                        'price': kline[4],  # 收盘价（最新价格）
-                        'open': kline[1],   # 开盘价
-                        'high': kline[2],   # 最高价
-                        'low': kline[3],    # 最低价
-                        'volume': kline[5], # 成交量
-                        'timestamp': kline[6]  # 收盘时间戳
-                    }
-                else:
-                    return None
-            else:
-                self.log_message(f"API调用失败: {data.get('message', '未知错误')}")
-                return None
-                
-        except requests.exceptions.RequestException as e:
-            self.log_message(f"获取 {symbol} 价格失败: {str(e)}")
-            return None
+            # 如果获取失败且还有重试机会
+            if attempt < max_retries - 1:
+                self.log_message(f"获取 {symbol} 价格失败，第{attempt + 1}次重试")
+                time.sleep(random.uniform(0.5, 1.5))
+        
+        # 所有重试都失败
+        self.log_message(f"获取 {symbol} 价格失败，已重试{max_retries}次")
+        return None
     
     def get_token_24h_stats(self, symbol):
-        """获取代币24小时统计（ALPHA接口暂不支持，返回None）"""
-        # ALPHA接口暂不支持24小时统计，返回None
-        return None
+        """获取代币24小时统计 - 调用API模块"""
+        return self.api.get_token_24h_stats(symbol)
     
     def add_token(self):
         """添加代币"""
@@ -871,8 +1101,41 @@ class BinanceTrader:
         # 查找对应的ALPHA ID
         alpha_id = self.alpha_id_map.get(symbol)
         if not alpha_id:
-            messagebox.showerror("错误", f"未找到代币 {symbol} 的ALPHA ID，请检查代币名称")
-            return
+            # 如果找不到代币，尝试更新Alpha ID映射
+            print(f"未找到代币 {symbol} 的ALPHA ID，尝试更新代币列表...")
+            self.logger.log_message(f"未找到代币 {symbol} 的ALPHA ID，尝试更新代币列表...")
+            
+            try:
+                # 强制更新Alpha ID映射
+                token_data = self.api.get_binance_token_list()
+                updated_alpha_id_map = self.api.create_alpha_id_map(token_data)
+                
+                # 更新内存中的映射
+                self.alpha_id_map = updated_alpha_id_map
+                
+                # 保存到文件
+                with open('alphaIdMap.json', 'w', encoding='utf-8') as f:
+                    json.dump(updated_alpha_id_map, f, indent=2, ensure_ascii=False)
+                
+                update_msg = f"✅ 已更新Alpha ID映射，包含 {len(updated_alpha_id_map)} 个代币"
+                print(update_msg)
+                self.logger.log_message(update_msg)
+                
+                # 再次查找代币
+                alpha_id = self.alpha_id_map.get(symbol)
+                if not alpha_id:
+                    messagebox.showerror("错误", f"更新后仍未找到代币 {symbol} 的ALPHA ID，请检查代币名称是否正确")
+                    return
+                else:
+                    print(f"更新后找到代币 {symbol} 的ALPHA ID: {alpha_id}")
+                    self.logger.log_message(f"更新后找到代币 {symbol} 的ALPHA ID: {alpha_id}")
+                    
+            except Exception as e:
+                error_msg = f"更新Alpha ID映射失败: {e}"
+                print(error_msg)
+                self.logger.log_message(error_msg)
+                messagebox.showerror("错误", f"未找到代币 {symbol} 的ALPHA ID，且更新失败: {e}")
+                return
         
         alpha_symbol = f"{alpha_id}USDT"
         
@@ -906,7 +1169,10 @@ class BinanceTrader:
                 self.tokens[symbol] = {
                     'trade_count': 1,  # 默认交易次数
                     'trade_amount': 0.0,  # 默认成交额
-                    'auto_trading': False  # 默认不自动交易
+                    'auto_trading': False,  # 默认不自动交易
+                    'last_buy_quantity': 0.0,  # 存储上一个买单的份额
+                    'last_buy_amount': 0.0,  # 存储上一个买单的成交额
+                    'last_sell_amount': 0.0  # 存储上一个卖单的成交额
                 }
             
             self.tokens[symbol]['price'] = price
@@ -1137,7 +1403,7 @@ class BinanceTrader:
     
     def toggle_auto_trading_from_dialog(self, symbol, dialog):
         """从对话框切换自动交易状态"""
-        self.toggle_auto_trading(symbol)
+        self.trading_engine.toggle_auto_trading(symbol)
         dialog.destroy()
     
     def save_trade_settings(self, symbol, count_str, amount_str, dialog):
@@ -1173,7 +1439,7 @@ class BinanceTrader:
         """按钮松开效果"""
         button.configure(relief='raised')
         # 延迟执行实际功能，让用户看到按下效果
-        self.root.after(100, lambda: self.toggle_auto_trading(symbol))
+        self.root.after(100, lambda: self.trading_engine.toggle_auto_trading(symbol))
     
     
     def delete_selected_token(self):
@@ -1294,7 +1560,9 @@ class BinanceTrader:
                         'trade_amount': 0.0,
                         'auto_trading': False,
                         'change_24h': stability_data.get('change_24h', 0.0),
-                        'last_buy_quantity': token_data.get('last_buy_quantity', 0.0)  # 保留上一个买单份额
+                        'last_buy_quantity': token_data.get('last_buy_quantity', 0.0),  # 保留上一个买单份额
+                        'last_buy_amount': token_data.get('last_buy_amount', 0.0),  # 保留上一个买单成交额
+                        'last_sell_amount': token_data.get('last_sell_amount', 0.0)  # 保留上一个卖单成交额
                     }
             
             # 清理所有相关组件
@@ -1313,6 +1581,84 @@ class BinanceTrader:
             
             self.update_tree_view()
             self.log_message(f"已清空所有代币（保留了 {len(permanent_tokens)} 个稳定度看板代币）")
+    
+    def cancel_all_orders(self):
+        """取消所有订单并清理持仓"""
+        if not self.csrf_token or not self.cookie:
+            messagebox.showwarning("警告", "请先设置认证信息")
+            return
+        
+        # 确认对话框
+        result = messagebox.askyesno(
+            "确认操作", 
+            "此操作将:\n1. 取消所有未成交订单\n2. 卖出所有持有的代币\n\n确定要继续吗？",
+            icon='warning'
+        )
+        
+        if not result:
+            return
+        
+        self.log_message("开始执行取消所有订单并清理持仓...")
+        
+        # 在新线程中执行，避免阻塞UI
+        def cleanup_all():
+            try:
+                # 1. 取消所有未成交订单
+                self.log_message("正在取消所有未成交订单...")
+                cancel_success = self.api.cancel_all_orders()
+                if cancel_success:
+                    self.log_message("✅ 已取消所有未成交订单")
+                else:
+                    self.log_message("❌ 取消订单失败，继续执行清理...")
+                
+                # 等待一下，确保订单取消生效
+                time.sleep(2)
+                
+                # 2. 清理所有持仓
+                tokens_with_holdings = []
+                for symbol, token_data in self.tokens.items():
+                    last_buy_quantity = token_data.get('last_buy_quantity', 0)
+                    if last_buy_quantity > 0:
+                        tokens_with_holdings.append((symbol, token_data, last_buy_quantity))
+                
+                if tokens_with_holdings:
+                    self.log_message(f"发现 {len(tokens_with_holdings)} 个代币有持仓，开始清仓...")
+                    
+                    for symbol, token_data, quantity in tokens_with_holdings:
+                        display_name = token_data.get('display_name', symbol)
+                        self.log_message(f"{display_name} 检测到持有份额: {quantity}，正在清仓卖出...")
+                        
+                        # 使用交易引擎的清仓卖单逻辑（全局清理模式）
+                        self.trading_engine.execute_cleanup_sell_order(symbol, display_name, quantity, is_global_cleanup=True)
+                        
+                        # 每个代币之间稍微等待一下
+                        time.sleep(1)
+                else:
+                    self.log_message("✅ 无持仓代币，无需清仓")
+                
+                # 3. 停止所有自动交易
+                active_trading = []
+                for symbol in list(self.auto_trading.keys()):
+                    if self.auto_trading.get(symbol, False):
+                        active_trading.append(symbol)
+                
+                if active_trading:
+                    self.log_message(f"停止 {len(active_trading)} 个代币的自动交易...")
+                    for symbol in active_trading:
+                        self.auto_trading[symbol] = False
+                        if symbol in self.tokens:
+                            self.tokens[symbol]['auto_trading'] = False
+                    
+                    # 更新UI
+                    self.root.after(0, self.update_tree_view)
+                
+                self.log_message("✅ 取消所有订单并清理持仓完成")
+                
+            except Exception as e:
+                self.log_message(f"❌ 清理过程中出现异常: {str(e)}")
+        
+        # 启动清理线程
+        threading.Thread(target=cleanup_all, daemon=True).start()
     
     def refresh_single_token(self, symbol):
         """刷新单个代币价格"""
@@ -1339,338 +1685,268 @@ class BinanceTrader:
         
         threading.Thread(target=refresh_data, daemon=True).start()
     
-    def fetch_stability_data(self):
-        """获取稳定度看板数据"""
-        try:
-            # 首先尝试模拟浏览器请求
-            return self.fetch_stability_data_requests()
-        except Exception as e:
-            self.log_message(f"模拟请求失败，尝试Selenium: {str(e)}")
+    def start_4x_trading(self):
+        """开始4倍自动交易"""
+        if self.trading_4x_active:
+            # 停止4倍自动交易
+            self.trading_4x_active = False
+            self.trading_4x_btn.config(text="4倍自动交易", bg='#27ae60')
+            self.log_message("4倍自动交易已停止")
+        else:
+            # 开始4倍自动交易
             try:
-                return self.fetch_stability_data_selenium()
-            except Exception as e2:
-                self.log_message(f"Selenium也失败，尝试API: {str(e2)}")
-                return self.fetch_stability_data_api()
+                trading_count = int(self.trading_count_var.get())
+                if trading_count <= 0:
+                    self.log_message("交易次数必须大于0")
+                    return
+                
+                self.trading_4x_active = True
+                self.trading_4x_btn.config(text="停止4倍交易", bg='#e74c3c')
+                self.log_message(f"开始4倍自动交易，计划交易 {trading_count} 次")
+                
+                # 启动4倍自动交易线程
+                self.trading_4x_thread = threading.Thread(target=self.trading_engine.run_4x_trading, args=(trading_count,), daemon=True)
+                self.trading_4x_thread.start()
+                
+            except ValueError:
+                self.log_message("请输入有效的交易次数")
     
-    def fetch_stability_data_requests(self):
-        """使用requests直接调用API获取稳定度数据"""
-        try:
-            # 直接调用API接口
-            api_url = "https://alpha123.uk/stability_feed.json"
-            
-            # 简化的请求头
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-                'Referer': 'https://alpha123.uk/zh/stability.html'
-            }
-            
-            response = requests.get(api_url, headers=headers, timeout=15)
-            response.raise_for_status()
-            
-            # 解析JSON数据
-            api_data = response.json()
-            stability_data = []
-            
-            # 根据您提供的JSON结构解析数据
-            if isinstance(api_data, dict) and 'items' in api_data:
-                items = api_data['items']
-                
-                for item in items:
-                    if isinstance(item, dict):
-                        # 从display字段提取项目名称（去掉/USDT后缀）
-                        display = item.get('display', '')
-                        project = display.replace('/USDT', '') if display else item.get('key', '')
-                        
-                        # 获取最新价格
-                        metrics = item.get('metrics', {})
-                        last_price = metrics.get('lastPrice', 0)
-                        
-                        # 获取稳定度状态
-                        status = item.get('status', {})
-                        status_text = status.get('text', 'unknown')
-                        
-                        # 转换稳定度为中文
-                        stability_map = {
-                            'stable': '稳定',
-                            'unstable': '不稳定',
-                            'general': '一般',
-                            'moderate': '一般',
-                            'unknown': '未知'
-                        }
-                        stability = stability_map.get(status_text.lower(), '未知')
-                        
-                        # 获取4倍剩余天数
-                        multiplier_days = item.get('multiplier_days', 0)
-                        
-                        stability_data.append({
-                            'project': project,
-                            'stability': stability,
-                            'price': str(last_price),
-                            'remaining_days': str(multiplier_days)
-                        })
-            
-            # 如果API返回的是数组格式
-            elif isinstance(api_data, list):
-                for item in api_data:
-                    if isinstance(item, dict):
-                        display = item.get('display', '')
-                        project = display.replace('/USDT', '') if display else item.get('key', '')
-                        
-                        # 获取最新价格
-                        metrics = item.get('metrics', {})
-                        last_price = metrics.get('lastPrice', 0)
-                        
-                        # 获取稳定度状态
-                        status = item.get('status', {})
-                        status_text = status.get('text', 'unknown')
-                        
-                        # 转换稳定度为中文
-                        stability_map = {
-                            'stable': '稳定',
-                            'unstable': '不稳定',
-                            'general': '一般',
-                            'moderate': '一般',
-                            'unknown': '未知'
-                        }
-                        stability = stability_map.get(status_text.lower(), '未知')
-                        
-                        # 获取4倍剩余天数
-                        multiplier_days = item.get('multiplier_days', 0)
-                        
-                        stability_data.append({
-                            'project': project,
-                            'stability': stability,
-                            'price': str(last_price),
-                            'remaining_days': str(multiplier_days)
-                        })
-            
-            # 对数据进行排序：KOGE固定排第一位，其他按稳定度排序
-            def sort_key(item):
-                project = item['project']
-                stability = item['stability']
-                
-                # KOGE固定排第一位
-                if project == 'KOGE':
-                    return (0, 0)
-                
-                # 其他按稳定度排序：稳定 > 一般 > 不稳定
-                stability_order = {
-                    '稳定': 1,
-                    '一般': 2,
-                    'moderate': 2,  # 处理英文状态
-                    '不稳定': 3,
-                    'unstable': 3,  # 处理英文状态
-                    '未知': 4
-                }
-                
-                return (1, stability_order.get(stability, 4))
-            
-            stability_data.sort(key=sort_key)
-            
-            self.log_message(f"从API获取到 {len(stability_data)} 个稳定度项目")
-            return stability_data
-            
-        except Exception as e:
-            self.log_message(f"API调用失败: {str(e)}")
-            # 如果API失败，尝试备用方法
-            return self.fetch_stability_data_fallback()
+    def on_scheduled_trading_toggle(self):
+        """定时交易复选框状态改变时的处理"""
+        if self.scheduled_trading_var.get():
+            # 启用定时交易
+            self.scheduled_trading_enabled = True
+            self.log_message("定时交易已启用")
+            self.start_scheduled_trading_checker()
+        else:
+            # 禁用定时交易
+            self.scheduled_trading_enabled = False
+            self.log_message("定时交易已禁用")
+            if self.scheduled_trading_thread and self.scheduled_trading_thread.is_alive():
+                # 注意：线程无法强制停止，只能设置标志位让它自然结束
+                pass
     
-    def fetch_stability_data_fallback(self):
-        """备用方法：使用模拟数据"""
-        try:
-            # 基于您之前提供的图片数据
-            stability_data = [
-                {
-                    'project': 'AOP',
-                    'stability': '稳定',
-                    'price': '0.06210104',
-                    'remaining_days': '23'
-                },
-                {
-                    'project': 'KOGE',
-                    'stability': '稳定',
-                    'price': '48.00171117',
-                    'remaining_days': '0'
-                },
-                {
-                    'project': 'MCH',
-                    'stability': '稳定',
-                    'price': '0.02252917',
-                    'remaining_days': '7'
-                },
-                {
-                    'project': 'WOD',
-                    'stability': '稳定',
-                    'price': '0.11043909',
-                    'remaining_days': '4'
-                },
-                {
-                    'project': 'ZEUS',
-                    'stability': '一般',
-                    'price': '0.11610119',
-                    'remaining_days': '17'
-                },
-                {
-                    'project': 'ALEO',
-                    'stability': '不稳定',
-                    'price': '0.21285',
-                    'remaining_days': '18'
-                },
-                {
-                    'project': 'FROGGIE',
-                    'stability': '不稳定',
-                    'price': '0.03525713',
-                    'remaining_days': '24'
-                },
-                {
-                    'project': 'POP',
-                    'stability': '不稳定',
-                    'price': '0.00861099',
-                    'remaining_days': '14'
-                }
-            ]
-            
-            # 对备用数据也进行排序
-            def sort_key(item):
-                project = item['project']
-                stability = item['stability']
-                
-                if project == 'KOGE':
-                    return (0, 0)
-                
-                stability_order = {
-                    '稳定': 1,
-                    '一般': 2,
-                    '不稳定': 3,
-                    '未知': 4
-                }
-                
-                return (1, stability_order.get(stability, 4))
-            
-            stability_data.sort(key=sort_key)
-            
-            self.log_message(f"使用备用数据: {len(stability_data)} 个项目")
-            return stability_data
-            
-        except Exception as e:
-            self.log_message(f"requests获取稳定度数据失败: {str(e)}")
-            return self.fetch_stability_data_fallback()
+    def start_scheduled_trading_checker(self):
+        """启动定时交易检查线程"""
+        if self.scheduled_trading_thread and self.scheduled_trading_thread.is_alive():
+            return  # 如果已经在运行，不重复启动
+        
+        self.scheduled_trading_thread = threading.Thread(
+            target=self.scheduled_trading_worker, 
+            daemon=True
+        )
+        self.scheduled_trading_thread.start()
     
-    def fetch_stability_data_selenium(self):
-        """使用Selenium获取稳定度数据"""
-        driver = None
-        try:
-            # 配置Chrome选项
-            chrome_options = Options()
-            chrome_options.add_argument('--headless')  # 无头模式
-            chrome_options.add_argument('--no-sandbox')
-            chrome_options.add_argument('--disable-dev-shm-usage')
-            chrome_options.add_argument('--disable-gpu')
-            chrome_options.add_argument('--window-size=1920,1080')
-            chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
-            
-            # 启动浏览器
-            driver = webdriver.Chrome(options=chrome_options)
-            driver.get("https://alpha123.uk/zh/stability.html")
-            
-            # 等待页面加载完成
-            wait = WebDriverWait(driver, 10)
-            
-            # 等待表格数据加载完成
+    def scheduled_trading_worker(self):
+        """定时交易检查工作线程"""
+        while self.scheduled_trading_enabled:
             try:
-                wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
-                # 等待数据加载（不是"加载中..."）
-                wait.until(lambda driver: "加载中" not in driver.page_source)
-            except:
-                self.log_message("等待数据加载超时")
-            
-            # 获取页面源码
-            page_source = driver.page_source
-            soup = BeautifulSoup(page_source, 'html.parser')
-            
-            # 解析表格数据
-            stability_data = []
-            table = soup.find('table')
-            
-            if table:
-                rows = table.find_all('tr')[1:]  # 跳过表头
+                current_time = datetime.now()
+                current_date = current_time.date()
+                current_hour = current_time.hour
+                current_minute = current_time.minute
                 
-                for row in rows:
-                    cells = row.find_all('td')
-                    if len(cells) >= 4:
-                        project = cells[0].get_text(strip=True)
-                        stability_text = cells[1].get_text(strip=True)
-                        latest_price = cells[2].get_text(strip=True)
-                        remaining_days = cells[3].get_text(strip=True)
-                        
-                        # 跳过"加载中..."行
-                        if project == "加载中..." or not project:
-                            continue
-                        
-                        # 确定稳定度状态
-                        stability_status = "未知"
-                        if "稳定" in stability_text:
-                            stability_status = "稳定"
-                        elif "一般" in stability_text:
-                            stability_status = "一般"
-                        elif "不稳定" in stability_text:
-                            stability_status = "不稳定"
-                        
-                        stability_data.append({
-                            'project': project,
-                            'stability': stability_status,
-                            'price': latest_price,
-                            'remaining_days': remaining_days
-                        })
-            
-            self.log_message(f"通过Selenium获取了 {len(stability_data)} 个稳定度项目")
-            return stability_data
-            
-        except Exception as e:
-            self.log_message(f"Selenium获取稳定度数据失败: {str(e)}")
-            return []
-        finally:
-            if driver:
-                driver.quit()
-    
-    def fetch_stability_data_api(self):
-        """尝试通过API获取稳定度数据"""
-        try:
-            # 尝试查找可能的API接口
-            api_urls = [
-                "https://alpha123.uk/api/stability",
-                "https://alpha123.uk/api/zh/stability",
-                "https://alpha123.uk/api/data/stability"
-            ]
-            
-            for api_url in api_urls:
+                # 获取设定的时间
                 try:
-                    response = requests.get(api_url, timeout=5)
-                    if response.status_code == 200:
-                        data = response.json()
-                        # 解析API数据
-                        stability_data = []
-                        for item in data:
-                            stability_data.append({
-                                'project': item.get('project', ''),
-                                'stability': item.get('stability', '未知'),
-                                'price': str(item.get('price', '')),
-                                'remaining_days': str(item.get('remaining_days', ''))
-                            })
-                        self.log_message(f"通过API获取了 {len(stability_data)} 个稳定度项目")
-                        return stability_data
-                except:
+                    scheduled_hour = int(self.scheduled_hour_var.get())
+                    scheduled_minute = int(self.scheduled_minute_var.get())
+                except ValueError:
+                    self.log_message("定时交易时间格式错误，请检查输入")
+                    time.sleep(60)  # 等待1分钟后重试
                     continue
+                
+                # 检查是否到达设定时间
+                if (current_hour == scheduled_hour and 
+                    current_minute == scheduled_minute and 
+                    self.last_scheduled_date != current_date and
+                    not self.trading_4x_active):
+                    
+                    # 执行定时交易
+                    self.last_scheduled_date = current_date
+                    self.log_message(f"到达定时交易时间 {scheduled_hour:02d}:{scheduled_minute:02d}，开始执行4倍自动交易")
+                    
+                    # 获取默认交易次数
+                    try:
+                        trading_count = int(self.trading_count_var.get())
+                    except ValueError:
+                        trading_count = 8  # 默认8次
+                    
+                    # 在GUI线程中执行交易
+                    self.root.after(0, lambda: self.execute_scheduled_trading(trading_count))
+                
+                # 检查超时提醒（超过设定时间30分钟）
+                self.check_timeout_alarm(current_hour, current_minute, scheduled_hour, scheduled_minute, current_date)
+                
+                # 每分钟检查一次
+                time.sleep(60)
+                
+            except Exception as e:
+                self.log_message(f"定时交易检查出错: {str(e)}")
+                time.sleep(60)  # 出错后等待1分钟再重试
+    
+    def execute_scheduled_trading(self, trading_count):
+        """执行定时交易"""
+        try:
+            if trading_count <= 0:
+                self.log_message("交易次数必须大于0")
+                return
             
-            # 如果API都失败，返回空数据
-            self.log_message("所有API接口都无法访问")
-            return []
+            self.trading_4x_active = True
+            self.trading_4x_btn.config(text="停止4倍交易", bg='#e74c3c')
+            self.log_message(f"定时交易启动，计划交易 {trading_count} 次")
+            
+            # 启动4倍自动交易线程
+            self.trading_4x_thread = threading.Thread(
+                target=self.trading_engine.run_4x_trading, 
+                args=(trading_count,), 
+                daemon=True
+            )
+            self.trading_4x_thread.start()
+                    
+        except Exception as e:
+            self.log_message(f"定时交易执行失败: {str(e)}")
+    
+    def check_timeout_alarm(self, current_hour, current_minute, scheduled_hour, scheduled_minute, current_date):
+        """检查超时提醒"""
+        try:
+            # 计算当前时间与设定时间的差值（分钟）
+            current_time_minutes = current_hour * 60 + current_minute
+            scheduled_time_minutes = scheduled_hour * 60 + scheduled_minute
+            
+            # 如果当前时间超过设定时间30分钟，但不超过1小时
+            if scheduled_time_minutes + 30 <= current_time_minutes < scheduled_time_minutes + 60:
+                # 检查今日是否已播放过闹钟
+                if not self.alarm_played_today:
+                    # 获取设定的交易次数
+                    try:
+                        expected_count = int(self.trading_count_var.get())
+                    except ValueError:
+                        expected_count = 8
+                    
+                    # 如果实际交易次数不等于设定次数，且启用了闹钟，播放闹钟
+                    enable_alarm = hasattr(self, 'enable_alarm_var') and self.enable_alarm_var.get()
+                    if self.daily_completed_trades != expected_count and enable_alarm:
+                        self.play_alarm()
+                        self.alarm_played_today = True
+                        self.log_message(f"⚠️ 超时警告：设定时间 {scheduled_hour:02d}:{scheduled_minute:02d} 已过30分钟，今日交易次数 {self.daily_completed_trades} 不等于设定次数 {expected_count}，播放闹钟提醒！")
+                    elif self.daily_completed_trades != expected_count and not enable_alarm:
+                        self.log_message(f"⚠️ 超时警告：设定时间 {scheduled_hour:02d}:{scheduled_minute:02d} 已过30分钟，今日交易次数 {self.daily_completed_trades} 不等于设定次数 {expected_count}，但闹钟未启用")
+                    else:
+                        self.log_message(f"今日交易次数已达到设定目标 {expected_count} 次，无需播放闹钟")
+            elif current_time_minutes >= scheduled_time_minutes + 60:
+                # 如果超过设定时间1小时，不再播放闹钟
+                if not self.alarm_played_today:
+                    try:
+                        expected_count = int(self.trading_count_var.get())
+                    except ValueError:
+                        expected_count = 8
+                    
+                    if self.daily_completed_trades != expected_count:
+                        self.log_message(f"⚠️ 超时警告：设定时间 {scheduled_hour:02d}:{scheduled_minute:02d} 已过1小时，今日交易次数 {self.daily_completed_trades} 不等于设定次数 {expected_count}，但已超过闹钟提醒时限")
+                        self.alarm_played_today = True  # 标记为已处理，避免重复提醒
+                        
+        except Exception as e:
+            self.log_message(f"超时检查出错: {str(e)}")
+    
+    def play_alarm(self):
+        """播放闹钟音频"""
+        try:
+            import os
+            import subprocess
+            
+            # 检查alarm.mp3文件是否存在
+            if not os.path.exists("alarm.mp3"):
+                self.log_message("警告：alarm.mp3文件不存在，无法播放闹钟")
+                return
+            
+            # 获取文件绝对路径
+            alarm_path = os.path.abspath("alarm.mp3")
+            
+            # 设置闹钟播放状态
+            self.alarm_is_playing = True
+            
+            # 更新按钮颜色为红色（播放中）
+            self.root.after(0, self.update_alarm_button_color)
+            
+            self.log_message("🔔 闹钟已播放，将循环播放15分钟")
+            
+            # 启动循环播放线程
+            def alarm_worker():
+                try:
+                    # 计算需要播放的次数（15分钟 = 900秒，每次播放7秒+等待3秒=10秒）
+                    total_cycles = 90  # 900 / 10 = 90次
+                    
+                    for i in range(total_cycles):
+                        if not self.alarm_is_playing:
+                            break
+                        
+                        # 使用Windows默认播放器打开MP3文件
+                        # /min表示最小化窗口，避免弹出太多窗口
+                        subprocess.Popen(
+                            f'start /min "" "{alarm_path}"',
+                            shell=True,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL
+                        )
+                        
+                        self.log_message(f"闹钟播放进度: 第{i+1}/{total_cycles}次播放")
+                        
+                        # 等待7秒让音频播放
+                        time.sleep(7)
+                        
+                        # 等待3秒后继续下一次播放
+                        time.sleep(3)
+                    
+                    # 播放结束，更新状态
+                    self.alarm_is_playing = False
+                    self.root.after(0, self.update_alarm_button_color)
+                    self.log_message("🔔 闹钟播放已结束（15分钟）")
+                    
+                except Exception as e:
+                    self.log_message(f"闹钟播放过程出错: {str(e)}")
+                    self.alarm_is_playing = False
+                    self.root.after(0, self.update_alarm_button_color)
+            
+            # 启动播放线程
+            alarm_thread = threading.Thread(target=alarm_worker, daemon=True)
+            alarm_thread.start()
             
         except Exception as e:
-            self.log_message(f"API获取稳定度数据失败: {str(e)}")
-            return []
+            self.log_message(f"播放闹钟失败: {str(e)}")
+    
+    def stop_alarm_manually(self):
+        """手动停止闹钟"""
+        try:
+            # 设置闹钟播放状态为停止
+            self.alarm_is_playing = False
+            
+            # 更新按钮颜色为绿色（停止状态）
+            self.update_alarm_button_color()
+            
+            self.log_message("🔔 闹钟已手动停止")
+        except Exception as e:
+            self.log_message(f"停止闹钟失败: {str(e)}")
+    
+    def update_alarm_button_color(self):
+        """更新闹钟按钮颜色"""
+        try:
+            if hasattr(self, 'stop_alarm_btn') and self.stop_alarm_btn:
+                if self.alarm_is_playing:
+                    # 播放中：红色
+                    self.stop_alarm_btn.config(bg='#e74c3c')
+                else:
+                    # 停止状态：绿色
+                    self.stop_alarm_btn.config(bg='#27ae60')
+        except Exception as e:
+            self.log_message(f"更新闹钟按钮颜色失败: {str(e)}")
+    
+    def reset_daily_alarm_flag(self):
+        """重置每日闹钟标志（在每日重置时调用）"""
+        self.alarm_played_today = False
+        self.config_manager.daily_completed_trades = 0
+        self.daily_completed_trades = 0
+        self.log_message("每日闹钟标志已重置")
+    
     
     def show_stability_dashboard(self):
         """显示稳定度看板窗口"""
@@ -1738,6 +2014,25 @@ class BinanceTrader:
         columns = ('项目', '稳定度', '最新价', '4倍剩余天数', '操作')
         tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
         
+        # 配置标签样式
+        style = ttk.Style()
+        
+        # 稳定状态 - 绿色
+        style.configure("stable.Treeview", foreground="#2ecc71")
+        style.configure("stable.Treeview.Item", foreground="#2ecc71")
+        
+        # 一般状态 - 橙色
+        style.configure("moderate.Treeview", foreground="#f39c12")
+        style.configure("moderate.Treeview.Item", foreground="#f39c12")
+        
+        # 不稳定状态 - 红色
+        style.configure("unstable.Treeview", foreground="#e74c3c")
+        style.configure("unstable.Treeview.Item", foreground="#e74c3c")
+        
+        # 未知状态 - 灰色
+        style.configure("unknown.Treeview", foreground="#95a5a6")
+        style.configure("unknown.Treeview.Item", foreground="#95a5a6")
+        
         # 设置列标题和宽度
         tree.heading('项目', text='项目')
         tree.heading('稳定度', text='稳定度')
@@ -1765,6 +2060,7 @@ class BinanceTrader:
         
         # 添加窗口关闭事件处理
         def on_window_close():
+            stability_window.destroy()  # 销毁窗口
             self.stability_window = None  # 清空窗口引用
         
         stability_window.protocol("WM_DELETE_WINDOW", on_window_close)
@@ -1777,7 +2073,7 @@ class BinanceTrader:
         def fetch_data():
             window.status_label.config(text="正在获取数据...", fg='orange')
             
-            data = self.fetch_stability_data()
+            data = self.alpha123_client.fetch_stability_data()
             
             # 在主线程中更新UI
             window.after(0, lambda: self.update_stability_table(window, data))
@@ -1801,22 +2097,28 @@ class BinanceTrader:
             price = item['price']
             remaining_days = item['remaining_days']
             
-            # 根据稳定度设置颜色标签
+            # 根据稳定度设置颜色标签和样式
             stability_display = stability
-            if stability == "稳定":
-                stability_display = "🟢 稳定"
-            elif stability == "一般":
-                stability_display = "🟡 一般"
-            elif stability == "不稳定":
-                stability_display = "🔴 不稳定"
+            tag_name = "unknown"  # 默认标签
             
-            window.tree.insert('', 'end', values=(
+            if stability == "稳定":
+                stability_display = "🟢 稳定"  # 绿色圆点
+                tag_name = "stable"
+            elif stability == "一般":
+                stability_display = "🟡 一般"  # 橙色圆点
+                tag_name = "moderate"
+            elif stability == "不稳定":
+                stability_display = "🔴 不稳定"  # 红色圆点
+                tag_name = "unstable"
+            
+            # 插入数据并应用标签样式
+            item_id = window.tree.insert('', 'end', values=(
                 project,
                 stability_display,
                 price,
                 remaining_days,
                 "添加"
-            ))
+            ), tags=(tag_name,))
         
         window.status_label.config(text=f"已加载 {len(data)} 个项目", fg='green')
         
@@ -1866,57 +2168,54 @@ class BinanceTrader:
             messagebox.showerror("错误", f"添加代币 {project} 失败: {str(e)}")
 
     def load_config(self):
-        """加载配置文件"""
-        try:
-            if os.path.exists(self.config_file):
-                with open(self.config_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-                    self.csrf_token = config.get('csrf_token')
-                    self.cookie = config.get('cookie')
-                    
-                    # 加载今日交易总额相关数据
-                    self.daily_total_amount = config.get('daily_total_amount', 0.0)
-                    self.last_trade_date = config.get('last_trade_date')
-                    
-                    print(f"已加载今日交易总额: {self.daily_total_amount:.2f} USDT")
-                    print(f"最后交易日期: {self.last_trade_date}")
-                    
-                    # 检查是否需要每日归零
-                    self.check_daily_reset()
-                    
-                    if self.csrf_token and self.cookie:
-                        print(f"已加载配置: CSRF Token: {self.csrf_token[:10]}..., Cookie: {self.cookie[:50]}...")
-        except Exception as e:
-            print(f"加载配置文件失败: {e}")
+        """加载配置文件 - 配置已在__init__中加载"""
+        # 配置在初始化时已通过config_manager.load_config()加载
+        # 此方法保留用于接口兼容性
+        pass
     
     def save_config(self):
-        """保存配置文件"""
-        try:
-            config = {
-                'csrf_token': self.csrf_token,
-                'cookie': self.cookie,
-                'daily_total_amount': self.daily_total_amount,
-                'last_trade_date': self.last_trade_date
-            }
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(config, f, ensure_ascii=False, indent=2)
-            print("配置已保存")
-        except Exception as e:
-            print(f"保存配置文件失败: {e}")
+        """保存配置文件 - 调用配置管理器"""
+        # 同步本地数据到配置管理器
+        self.config_manager.csrf_token = self.csrf_token
+        self.config_manager.cookie = self.cookie
+        self.config_manager.daily_total_amount = self.daily_total_amount
+        self.config_manager.daily_trade_loss = self.daily_trade_loss
+        self.config_manager.daily_completed_trades = self.daily_completed_trades
+        self.config_manager.last_trade_date = self.last_trade_date
+        
+        # 保存配置
+        self.config_manager.save_config()
     
-    def check_daily_reset(self):
-        """检查是否需要每日归零"""
-        try:
-            today = datetime.now().strftime('%Y-%m-%d')
-            if self.last_trade_date != today:
-                # 日期不同，需要归零
-                if self.last_trade_date:
-                    self.log_message(f"检测到日期变化: {self.last_trade_date} -> {today}，今日交易总额已归零")
-                self.daily_total_amount = 0.0
-                self.last_trade_date = today
-                self.save_config()
-        except Exception as e:
-            self.log_message(f"检查每日归零失败: {str(e)}")
+    def init_daily_balance(self):
+        """初始化当天初始资金"""
+        if not self.csrf_token or not self.cookie:
+            self.log_message("认证信息未设置，跳过获取初始资金")
+            return
+        
+        # 检查是否已经设置过当天的初始资金
+        today = datetime.now().strftime('%Y-%m-%d')
+        if (self.config_manager.daily_initial_balance is not None and 
+            self.config_manager.last_trade_date == today):
+            self.log_message(f"当天初始资金已设置: {self.config_manager.daily_initial_balance} USDT")
+            return
+        
+        # 在新线程中获取初始资金，避免阻塞UI
+        def fetch_initial_balance():
+            try:
+                self.log_message("正在获取当天初始资金...")
+                balance = self.api.get_funding_balance()
+                
+                if balance is not None:
+                    self.config_manager.set_daily_initial_balance(balance)
+                    self.log_message(f"✅ 当天初始资金已设置: {balance} USDT")
+                    # 更新显示
+                    self.root.after(0, self.update_daily_initial_balance_display)
+                else:
+                    self.log_message("⚠️ 获取初始资金失败，请稍后重试")
+            except Exception as e:
+                self.log_message(f"获取初始资金异常: {str(e)}")
+        
+        threading.Thread(target=fetch_initial_balance, daemon=True).start()
     
     def update_daily_total_display(self):
         """更新今日交易总额显示"""
@@ -1934,583 +2233,19 @@ class BinanceTrader:
     def run(self):
         """运行应用"""
         self.log_message("币安量化交易系统启动")
+        
+        # 初始化认证信息过期显示
+        self.root.after(1000, self.update_auth_expiry_display)
+        
         self.root.mainloop()
     
-    
-    def toggle_auto_trading(self, symbol):
-        """切换自动交易状态"""
-        display_name = self.tokens[symbol].get('display_name', symbol)
-        
-        # 添加调试信息
-        current_status = self.auto_trading.get(symbol, False)
-        self.log_message(f"[DEBUG] {display_name} toggle_auto_trading 被调用，当前状态: {current_status}")
-        
-        if symbol in self.auto_trading and self.auto_trading[symbol]:
-            # 停止自动交易
-            self.auto_trading[symbol] = False
-            self.tokens[symbol]['auto_trading'] = False
-            if symbol in self.trading_threads:
-                # 这里可以添加停止线程的逻辑
-                pass
-            self.log_message(f"{display_name} 自动交易已停止")
-            
-            # 更新表格显示
-            self.update_tree_view()
-        else:
-            # 开始自动交易
-            if not self.csrf_token or not self.cookie:
-                messagebox.showerror("错误", "请先设置认证信息")
-                return
-            
-            self.auto_trading[symbol] = True
-            self.tokens[symbol]['auto_trading'] = True
-            
-            # 启动自动交易线程
-            thread = threading.Thread(target=self.auto_trade_worker, args=(symbol,), daemon=True)
-            self.trading_threads[symbol] = thread
-            thread.start()
-            
-            self.log_message(f"{display_name} 自动交易已开始")
-            
-            # 更新表格显示
-            self.update_tree_view()
-    
-    def auto_trade_worker(self, symbol):
-        """自动交易工作线程 - 单向交易模式"""
-        trade_count = self.tokens[symbol].get('trade_count', 1)
-        completed_trades = 0
-        display_name = self.tokens[symbol].get('display_name', symbol)
-        
-        self.log_message(f"{display_name} 开始自动交易，目标次数: {trade_count}")
-        
-        # 开始自动交易
-        
-        while self.auto_trading.get(symbol, False) and completed_trades < trade_count:
-            try:
-                # 添加调试信息
-                self.log_message(f"[DEBUG] {display_name} 进入交易循环，auto_trading状态: {self.auto_trading.get(symbol, False)}")
-                
-                # 1. 获取价格
-                price_data = self.get_token_price(symbol)
-                if not price_data:
-                    self.log_message(f"{display_name} 获取价格失败，等待1秒后重试")
-                    time.sleep(random.uniform(0, 1))
-                    continue
-                
-                current_price = float(price_data['price'])
-                
-                # 2. 下买单（重试机制）
-                buy_order_id = None
-                while self.auto_trading.get(symbol, False) and not buy_order_id:
-                    buy_order_id = self.place_single_order(symbol, current_price, "BUY")
-                    if not buy_order_id:
-                        self.log_message(f"{display_name} 买单下单失败，等待1秒后重试")
-                        time.sleep(random.uniform(0, 1))
-                        # 重新获取价格
-                        price_data = self.get_token_price(symbol)
-                        if price_data:
-                            current_price = float(price_data['price'])
-                
-                # 如果自动交易被停止，跳出外层循环
-                if not self.auto_trading.get(symbol, False):
-                    break
-                
-                self.log_message(f"{display_name} 买单下单成功，价格为: {current_price}")
-                
-                # 3. 等待买单成交（最多6次检查，30秒）
-                buy_filled = False
-                check_count = 0
-                max_checks = 6
-                self.log_message(f"[DEBUG] {display_name} 开始等待买单成交，auto_trading状态: {self.auto_trading.get(symbol, False)}")
-                
-                while self.auto_trading.get(symbol, False) and not buy_filled and check_count < max_checks:
-                    time.sleep(random.uniform(1, 2))  # 等待0-1秒随机时间
-                    check_count += 1
-                    
-                    if self.check_single_order_filled(buy_order_id):
-                        buy_filled = True
-                    else:
-                        if check_count < max_checks:
-                            self.log_message(f"{display_name} 买单尚未成交，2秒后继续检查委托状态")
-                        else:
-                            # 6次检查后仍未成交，取消委托并重新下单
-                            self.log_message(f"{display_name} 委托已约10秒没有成交，取消委托")
-                            self.cancel_all_orders()
-                            
-                            # 重新获取价格并下单
-                            price_data = self.get_token_price(symbol)
-                            if price_data:
-                                current_price = float(price_data['price'])
-                                buy_order_id = self.place_single_order(symbol, current_price, "BUY")
-                                if buy_order_id:
-                                    self.log_message(f"{display_name} 重新下单成功，价格为: {current_price}")
-                                    check_count = 0  # 重置检查计数
-                                else:
-                                    self.log_message(f"{display_name} 重新下单失败，等待1秒后重试")
-                                    time.sleep(random.uniform(0, 1))
-                                    continue  # 继续重试，不退出循环
-                            else:
-                                self.log_message(f"{display_name} 重新获取价格失败，等待1秒后重试")
-                                time.sleep(random.uniform(0, 1))
-                                continue  # 继续重试，不退出循环
-                
-                # 如果自动交易被停止，跳出外层循环
-                if not self.auto_trading.get(symbol, False):
-                    break
-                
-                # 4. 获取最新价格
-                price_data = self.get_token_price(symbol)
-                if not price_data:
-                    self.log_message(f"{display_name} 获取最新价格失败，等待1秒后重试")
-                    time.sleep(random.uniform(0, 1))
-                    continue
-                
-                sell_price = float(price_data['price'])
-                
-                # 5. 下卖单（重试机制）
-                sell_order_id = None
-                while self.auto_trading.get(symbol, False) and not sell_order_id:
-                    sell_order_id = self.place_single_order(symbol, sell_price, "SELL")
-                    if not sell_order_id:
-                        self.log_message(f"{display_name} 卖单下单失败，等待1秒后重试")
-                        time.sleep(random.uniform(0, 1))
-                        # 重新获取价格
-                        price_data = self.get_token_price(symbol)
-                        if price_data:
-                            sell_price = float(price_data['price'])
-                
-                # 如果自动交易被停止，跳出外层循环
-                if not self.auto_trading.get(symbol, False):
-                    break
-                
-                self.log_message(f"{display_name} 卖单下单成功，价格为: {sell_price}")
-                
-                # 6. 等待卖单成交（最多6次检查，30秒）
-                sell_filled = False
-                check_count = 0
-                max_checks = 6
-                
-                while self.auto_trading.get(symbol, False) and not sell_filled and check_count < max_checks:
-                    time.sleep(random.uniform(1, 2))  # 等待0-1秒随机时间
-                    check_count += 1
-                    
-                    if self.check_single_order_filled(sell_order_id):
-                        sell_filled = True
-                    else:
-                        if check_count < max_checks:
-                            self.log_message(f"{display_name} 卖单尚未成交，2秒后继续检查委托状态")
-                        else:
-                            # 6次检查后仍未成交，取消委托并重新下单
-                            self.log_message(f"{display_name} 委托已约10秒没有成交，取消委托")
-                            self.cancel_all_orders()
-                            
-                            # 重新获取价格并下单
-                            price_data = self.get_token_price(symbol)
-                            if price_data:
-                                sell_price = float(price_data['price'])
-                                sell_order_id = self.place_single_order(symbol, sell_price, "SELL")
-                                if sell_order_id:
-                                    self.log_message(f"{display_name} 重新下单成功，价格为: {sell_price}")
-                                    check_count = 0  # 重置检查计数
-                                else:
-                                    self.log_message(f"{display_name} 重新下单失败，等待1秒后重试")
-                                    time.sleep(random.uniform(0, 1))
-                                    continue  # 继续重试，不退出循环
-                            else:
-                                self.log_message(f"{display_name} 重新获取价格失败，等待1秒后重试")
-                                time.sleep(random.uniform(0, 1))
-                                continue  # 继续重试，不退出循环
-                
-                # 如果自动交易被停止，跳出外层循环
-                if not self.auto_trading.get(symbol, False):
-                    break
-                
-                # 一次买卖完成
-                completed_trades += 1
-                self.log_message(f"{display_name} 第 {completed_trades} 次买卖完成")
-                
-                # 更新成交额
-                self.update_trade_amount(symbol, sell_price)
-                
-            except Exception as e:
-                self.log_message(f"{display_name} 自动交易出错: {str(e)}")
-                time.sleep(random.uniform(0, 1))
-        
-        # 交易完成
-        self.auto_trading[symbol] = False
-        self.tokens[symbol]['auto_trading'] = False
-        
-        # 更新表格显示
-        self.root.after(0, lambda: self.update_tree_view())
-        
-        self.log_message(f"{display_name} 自动交易完成，共完成 {completed_trades} 次交易")
-    
-    
-    def place_dual_order(self, symbol, price):
-        """同时创建买单和卖单"""
-        try:
-            url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place"
-            
-            headers = {
-                'Accept': '*/*',
-                'Accept-Language': 'zh-CN,zh;q=0.9',
-                'Content-Type': 'application/json',
-                'csrftoken': self.csrf_token,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
-            }
-            
-            # 构建请求数据
-            payload = {
-                "baseAsset": symbol.replace('USDT', ''),
-                "quoteAsset": "USDT",
-                "workingSide": "BUY",
-                "workingPrice": price,
-                "workingQuantity": 0.1,
-                "pendingPrice": price * 100,
-                "paymentDetails": [{"amount": "1025", "paymentWalletType": "CARD"}]
-            }
-            
-            response = requests.post(url, headers=headers, json=payload, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('code') == '000000' and 'data' in data:
-                    return data['data'].get('workingOrderId'), data['data'].get('pendingOrderId')
-                else:
-                    # 打印错误信息
-                    error_code = data.get('code', 'unknown')
-                    error_msg = data.get('message', 'unknown error')
-                    self.log_message(f"下单失败 - 错误代码: {error_code}, 错误信息: {error_msg}")
-            else:
-                self.log_message(f"下单失败 - HTTP状态码: {response.status_code}")
-            
-            return None, None
-        except Exception as e:
-            self.log_message(f"下单异常: {str(e)}")
-            return None, None
-    
-    def place_single_order(self, symbol, price, side):
-        """创建单向订单（买单或卖单）"""
-        try:
-            url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place"
-            
-            headers = {
-                'Accept': '*/*',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'Accept-Language': 'zh-CN,zh;q=0.9',
-                'Baggage': 'sentry-environment=prod,sentry-release=20250924-d1d0004c-2900,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=847f639347bc49be967b6777b03a413c,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
-                'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-                'Clienttype': 'web',
-                'Content-Type': 'application/json',
-                'Cookie': self.cookie,
-                'csrftoken': self.csrf_token,
-                'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQzMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-                'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-                'lang': 'zh-CN',
-                'Priority': 'u=1, i',
-                'Referer': 'https://www.binance.com/zh-CN/alpha/bsc/0xe6df05ce8c8301223373cf5b969afcb1498c5528',
-                'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                'Sentry-Trace': '847f639347bc49be967b6777b03a413c-ac242fc8bf0e51e2-0',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
-                'X-Passthrough-Token': '',
-                'X-Trace-Id': '000f2190-8b35-4cb1-aa27-d62a5017a918',
-                'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
-            }
-            
-            # 计算数量 - KOGE代币使用1025，其他代币使用1030
-            base_amount = 1025 if symbol == "ALPHA_22USDT" else 1030
-            working_quantity = base_amount / price
-            
-            # KOGE代币截取到4位小数，其他代币截取到2位小数
-            if symbol == "ALPHA_22USDT":
-                working_quantity_formatted = int(working_quantity * 10000) / 10000  # 截断到4位小数
-            else:
-                working_quantity_formatted = int(working_quantity * 100) / 100  # 截断到2位小数
-            
-            # 计算支付金额
-            if side == "BUY":
-                payment_amount = working_quantity_formatted * price
-                payment_amount_formatted = payment_amount  # 直接使用计算结果，无需额外截断
-                payment_wallet_type = "CARD"
 
-            else:  # SELL
-                # 卖单直接使用上一个买单的份额，但需要考虑手续费
-                if symbol in self.tokens and self.tokens[symbol].get('last_buy_quantity', 0) > 0:
-                    # 获取上一个买单的份额
-                    last_buy_quantity = self.tokens[symbol]['last_buy_quantity']
-                    
-                    # 计算手续费（0.01%）
-                    fee_rate = 0.0001  # 0.01%
-                    fee_amount = last_buy_quantity * fee_rate
-                    
-                    # 扣除手续费后的实际可卖份额
-                    working_quantity_formatted = max(0, last_buy_quantity - fee_amount)
-                    
-                    # 按照代币类型截断到正确的小数位数
-                    if symbol == "ALPHA_22USDT":
-                        working_quantity_formatted = int(working_quantity_formatted * 10000) / 10000  # 截断到4位小数
-                    else:
-                        working_quantity_formatted = int(working_quantity_formatted * 100) / 100  # 截断到2位小数
-                    
-                    self.log_message(f"代币份额: {working_quantity_formatted}")
-                else:
-                    # 如果没有上一个买单份额，则使用当前计算的份额并扣除手续费
-                    fee_rate = 0.0001  # 0.01%
-                    fee_amount = working_quantity_formatted * fee_rate
-                    working_quantity_formatted = max(0, working_quantity_formatted - fee_amount)
-                    
-                    # 按照代币类型截断到正确的小数位数
-                    if symbol == "ALPHA_22USDT":
-                        working_quantity_formatted = int(working_quantity_formatted * 10000) / 10000  # 截断到4位小数
-                    else:
-                        working_quantity_formatted = int(working_quantity_formatted * 100) / 100  # 截断到2位小数
-                    
-                    self.log_message(f"没有找到上一个买单份额，使用当前计算份额并扣除手续费: {working_quantity_formatted}")
-                
-                # 卖单的支付金额就是代币数量
-                payment_amount = working_quantity_formatted
-                payment_amount_formatted = working_quantity_formatted
-                payment_wallet_type = "ALPHA"
-            
-            # 构建请求数据
-            payload = {
-                "baseAsset": symbol.replace('USDT', ''),
-                "quoteAsset": "USDT",
-                "side": side,
-                "price": price,
-                "quantity": working_quantity_formatted,
-                "paymentDetails": [{"amount": str(payment_amount), "paymentWalletType": payment_wallet_type}]
-            }
-            
-            #打印买单请求参数
-            if side == "BUY":
-                print(f"\n=== 买单请求参数 ===")
-            else:
-                print(f"\n=== 卖单请求参数 ===")
-            print(f"代币: {symbol}")
-            print(f"基础金额: ${base_amount}")
-            print(f"价格: ${price}")
-            print(f"原始代币份额: {working_quantity:.8f}")
-            precision = "4位小数" if symbol == "ALPHA_22USDT" else "2位小数"
-            print(f"截断后代币份额({precision}): {working_quantity_formatted}")
-            print(f"支付金额: {payment_amount:.8f}")
-            print(f"支付方式: {payment_wallet_type}")
-            print("请求数据:")
-            print(json.dumps(payload, indent=2, ensure_ascii=False))
-            print("=" * 50)
-            
-            response = requests.post(url, headers=headers, json=payload, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('code') == '000000' and 'data' in data:
-                    # 买单成功后立即保存份额
-                    if side == "BUY" and symbol in self.tokens:
-                        self.tokens[symbol]['last_buy_quantity'] = working_quantity_formatted
-                        self.log_message(f"已保存买单份额: {working_quantity_formatted}")
-                    return data['data']  # 直接返回订单ID
-                else:
-                    # 打印错误信息
-                    error_code = data.get('code', 'unknown')
-                    error_message = data.get('message', '未知错误')
-                    self.log_message(f"{side}单下单失败 - 错误代码: {error_code}, 错误信息: {error_message}")
-                    return None
-            else:
-                self.log_message(f"{side}单下单请求失败 - HTTP状态码: {response.status_code}")
-                return None
-                
-        except Exception as e:
-            self.log_message(f"{side}单下单异常: {str(e)}")
-            return None
-    
-    def cancel_all_orders(self):
-        """取消所有委托"""
-        try:
-            if not self.csrf_token or not self.cookie:
-                self.log_message("请先设置认证信息")
-                return False
-                
-            url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/cancel-all"
-            payload = {}
-            
-            headers = {
-                'Accept': '*/*',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'Accept-Language': 'zh-CN,zh;q=0.9',
-                'Baggage': 'sentry-environment=prod,sentry-release=20250924-d1d0004c-2900,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=847f639347bc49be967b6777b03a413c,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
-                'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-                'Clienttype': 'web',
-                'Content-Type': 'application/json',
-                'Cookie': self.cookie,
-                'csrftoken': self.csrf_token,
-                'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQyMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-                'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-                'lang': 'zh-CN',
-                'Priority': 'u=1, i',
-                'Referer': 'https://www.binance.com/zh-CN/alpha/bsc/0xe6df05ce8c8301223373cf5b969afcb1498c5528',
-                'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                'Sentry-Trace': '847f639347bc49be967b6777b03a413c-ac242fc8bf0e51e2-0',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
-                'X-Passthrough-Token': '',
-                'X-Trace-Id': '000f2190-8b35-4cb1-aa27-d62a5017a918',
-                'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
-            }
-            
-            response = requests.post(url, headers=headers, json=payload, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('code') == '000000' and data.get('success') == True:
-                    self.log_message("取消所有委托成功")
-                    return True
-                else:
-                    self.log_message(f"取消委托失败 - 错误代码: {data.get('code')}, 错误信息: {data.get('message')}")
-                    return False
-            else:
-                self.log_message(f"取消委托请求失败 - HTTP状态码: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            self.log_message(f"取消委托异常: {str(e)}")
-            return False
-
-    def check_single_order_filled(self, order_id):
-        """检查单个订单是否已成交"""
-        try:
-            # 获取今天和明天的时间戳
-            now = datetime.now()
-            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            tomorrow_start = today_start + timedelta(days=1)
-            
-            start_time = int(today_start.timestamp() * 1000)
-            end_time = int(tomorrow_start.timestamp() * 1000)
-            
-            url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/get-order-history-web"
-            params = {
-                'page': 1,
-                'rows': 1,  # 只获取最新1条订单
-                'orderStatus': 'FILLED',
-                'startTime': start_time,
-                'endTime': end_time
-            }
-            
-            headers = {
-                'Accept': '*/*',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'Accept-Language': 'zh-CN,zh;q=0.9',
-                'Bnc-Level': '0',
-                'Bnc-Location': 'CN',
-                'Bnc-Time-Zone': 'Asia/Shanghai',
-                'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-                'Clienttype': 'web',
-                'Content-Type': 'application/json',
-                'Cookie': self.cookie,
-                'csrftoken': self.csrf_token,
-                'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQyMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-                'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-                'fvideo-token': 'r4R1qH50iUiBSvkPxnk29hGEzOdVdsdK1PoVlT6ffvZ/MjoWsgdF2PVAMzhjjqaaYN8uQUjZfwbLIYLnvjaK+0JsjNR4eNpSUmddjCkrKVAbcD6VKcogkjBEGbgOoQrBIbaKP1/QYanSSqlXpTal5hQExJnFU0EwVWLUSs0Zr8PYXnzgfSaRTxbPy91QYSeYo=3b',
-                'If-None-Match': 'W/"0fc5ed125198498515f07cb35f0655bb7"',
-                'lang': 'zh-CN',
-                'Priority': 'u=1, i',
-                'Referer': 'https://www.binance.com/zh-CN/my/wallet/alpha',
-                'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Sec-Fetch-Dest': 'empty',
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-origin',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
-                'X-Passthrough-Token': '',
-                'X-Trace-Id': '14b00354-0504-4a31-a7c9-6206fcbda5cb',
-                'X-Ui-Request-Trace': '14b00354-0504-4a31-a7c9-6206fcbda5cb'
-            }
-            
-            response = requests.get(url, headers=headers, params=params, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('code') == '000000' and 'data' in data:
-                    orders = data['data']
-                    if orders and len(orders) > 0:
-                        # 检查最新订单是否匹配
-                        latest_order = orders[0]
-                        if str(latest_order.get('orderId')) == str(order_id):
-                            # 打印成交额信息
-                            cum_quote = latest_order.get('cumQuote', '0')
-                            side = latest_order.get('side', '')
-                            
-                            # 根据订单方向格式化成交额
-                            if side == 'SELL':
-                                # 卖单截取两位小数
-                                formatted_amount = f"{float(cum_quote):.2f}"
-                            else:
-                                # 买单保持原精度
-                                formatted_amount = cum_quote
-                            
-                            self.log_message(f"订单 {order_id} 成交，成交额: {formatted_amount} USDT")
-                            return True
-                return False
-            else:
-                self.log_message(f"查询订单历史失败 - HTTP状态码: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            self.log_message(f"查询订单历史异常: {str(e)}")
-            return False
-
-    def check_orders_filled(self, buy_order_id, sell_order_id):
-        """检查订单是否已成交"""
-        try:
-            # 获取今天和明天的时间戳
-            now = datetime.now()
-            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            tomorrow_start = today_start + timedelta(days=1)
-            
-            start_time = int(today_start.timestamp() * 1000)
-            end_time = int(tomorrow_start.timestamp() * 1000)
-            
-            url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/get-order-history-web"
-            params = {
-                'page': 1,
-                'rows': 50,
-                'orderStatus': 'FILLED',
-                'startTime': start_time,
-                'endTime': end_time
-            }
-            
-            headers = {
-                'Accept': '*/*',
-                'Accept-Language': 'zh-CN,zh;q=0.9',
-                'Content-Type': 'application/json',
-                'csrftoken': self.csrf_token,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
-            }
-            
-            response = requests.get(url, headers=headers, params=params, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('code') == '000000' and 'data' in data:
-                    orders = data['data']
-                    buy_filled = any(order.get('orderId') == buy_order_id for order in orders)
-                    sell_filled = any(order.get('orderId') == sell_order_id for order in orders)
-                    return buy_filled and sell_filled
-            
-            return False
-        except Exception as e:
-            self.log_message(f"查询订单状态失败: {str(e)}")
-            return False
-    
     def update_trade_amount(self, symbol, price):
         """更新成交额"""
         try:
-            # KOGE代币每次交易增加1025 USDT，其他代币增加4*1030=4120 USDT
+            # 根据代币类型设置交易金额：KOGE使用1025，其他代币使用1030
             trade_amount = 1025.0 if symbol == "ALPHA_22USDT" else 4120.0
+            # trade_amount = 1.0  # 测试模式：统一使用1 USDT
             current_amount = self.tokens[symbol].get('trade_amount', 0.0)
             new_amount = current_amount + trade_amount
             
@@ -2527,11 +2262,102 @@ class BinanceTrader:
             # 更新界面
             self.root.after(0, self.update_tree_view)
             self.root.after(0, self.update_daily_total_display)
+            self.root.after(0, self.update_daily_loss_display)
             
             display_name = self.tokens[symbol].get('display_name', symbol)
             self.log_message(f"{display_name} 成交额更新: {current_amount:.2f} -> {new_amount:.2f} USDT，今日总额: {self.daily_total_amount:.2f} USDT")
         except Exception as e:
             self.log_message(f"更新成交额失败: {str(e)}")
+
+    def update_daily_loss_display(self):
+        """更新今日损耗显示"""
+        try:
+            if hasattr(self, 'daily_loss_label') and self.daily_loss_label:
+                self.daily_loss_label.config(text=f"{self.daily_trade_loss:.2f} USDT")
+                self.log_message(f"今日损耗显示已更新: {self.daily_trade_loss:.2f} USDT")
+            else:
+                self.log_message("今日损耗标签尚未创建，将在界面完全加载后重试")
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_daily_loss_display)
+        except Exception as e:
+            self.log_message(f"更新今日损耗显示失败: {str(e)}")
+    
+    def update_daily_trade_count_display(self):
+        """更新今日交易次数显示"""
+        try:
+            if hasattr(self, 'daily_trade_count_label') and self.daily_trade_count_label:
+                self.daily_trade_count_label.config(text=f"{self.daily_completed_trades}")
+                self.log_message(f"今日交易次数显示已更新: {self.daily_completed_trades}")
+            else:
+                self.log_message("今日交易次数标签尚未创建，将在界面完全加载后重试")
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_daily_trade_count_display)
+        except Exception as e:
+            self.log_message(f"更新今日交易次数显示失败: {str(e)}")
+            
+    def increment_daily_trade_count(self):
+        """增加今日交易次数"""
+        self.daily_completed_trades = self.config_manager.increment_trade_count()
+        self.root.after(0, self.update_daily_trade_count_display)
+        self.log_message(f"今日已完成交易次数: {self.daily_completed_trades}")
+    
+    def update_daily_initial_balance_display(self):
+        """更新今日初始余额显示"""
+        try:
+            if hasattr(self, 'daily_initial_balance_label') and self.daily_initial_balance_label:
+                initial_balance = self.config_manager.daily_initial_balance
+                if initial_balance is not None:
+                    self.daily_initial_balance_label.config(text=f"{initial_balance:.2f} USDT")
+                else:
+                    self.daily_initial_balance_label.config(text="-- USDT")
+            else:
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_daily_initial_balance_display)
+        except Exception as e:
+            self.log_message(f"更新今日初始余额显示失败: {str(e)}")
+    
+    def update_daily_end_balance_display(self):
+        """更新今日结束余额显示"""
+        try:
+            if hasattr(self, 'daily_end_balance_label') and self.daily_end_balance_label:
+                end_balance = self.config_manager.daily_end_balance
+                if end_balance is not None:
+                    self.daily_end_balance_label.config(text=f"{end_balance:.2f} USDT")
+                else:
+                    self.daily_end_balance_label.config(text="-- USDT")
+            else:
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_daily_end_balance_display)
+        except Exception as e:
+            self.log_message(f"更新今日结束余额显示失败: {str(e)}")
+    
+    def update_auth_expiry_display(self):
+        """更新认证信息过期显示"""
+        try:
+            if hasattr(self, 'auth_expiry_label') and self.auth_expiry_label:
+                expiry_info = self.config_manager.get_auth_expiry_info()
+                
+                # 根据状态设置颜色
+                if expiry_info['status'] == 'no_auth':
+                    color = '#e74c3c'  # 红色
+                elif expiry_info['status'] == 'warning':
+                    color = '#f39c12'  # 橙色
+                elif expiry_info['status'] == 'expired':
+                    color = '#e74c3c'  # 红色
+                elif expiry_info['status'] == 'ok':
+                    color = '#27ae60'  # 绿色
+                else:
+                    color = '#e74c3c'  # 红色
+                
+                self.auth_expiry_label.config(
+                    text=expiry_info['message'],
+                    fg=color
+                )
+            else:
+                # 如果标签还没创建，延迟100ms后重试
+                self.root.after(100, self.update_auth_expiry_display)
+        except Exception as e:
+            self.log_message(f"更新认证信息过期显示失败: {str(e)}")
 
 def main():
     """主函数"""

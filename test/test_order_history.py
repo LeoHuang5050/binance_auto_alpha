@@ -37,7 +37,7 @@ def test_order_history():
     # 请求参数
     params = {
         'page': 1,
-        'rows': 2,  # 只获取最新2条订单
+        'rows': 1,  # 只获取最新2条订单
         'orderStatus': 'FILLED',
         'startTime': start_time,
         'endTime': end_time

@@ -1,0 +1,505 @@
+
+[2025-09-30 11:21:10] 
+                                    === BUY单下单失败 ===
+                                    代币: ALPHA_351USDT
+                                    价格: 0.021797010000000002
+                                    数量: 47254.18
+                                    支付金额: 1029.999834
+                                    错误代码: 481002
+                                    错误信息: Unable to place order due to incorrect price or amount.
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.021797010000000002,
+  "quantity": 47254.18,
+  "paymentDetails": [
+    {
+      "amount": "1029.99983400",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:21:23] 
+                                    === BUY单下单失败 ===
+                                    代币: ALPHA_351USDT
+                                    价格: 0.021797100000000003
+                                    数量: 47253.99
+                                    支付金额: 1029.99994542
+                                    错误代码: 481002
+                                    错误信息: Unable to place order due to incorrect price or amount.
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.021797100000000003,
+  "quantity": 47253.99,
+  "paymentDetails": [
+    {
+      "amount": "1029.99994542",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:21:35] 
+                                    === BUY单下单失败 ===
+                                    代币: ALPHA_351USDT
+                                    价格: 0.021797160000000003
+                                    数量: 47253.86
+                                    支付金额: 1029.99994703
+                                    错误代码: 481002
+                                    错误信息: Unable to place order due to incorrect price or amount.
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.021797160000000003,
+  "quantity": 47253.86,
+  "paymentDetails": [
+    {
+      "amount": "1029.99994703",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:21:39] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_351USDT
+                                    价格: 0.021797289999999997
+                                    数量: 47242.95
+                                    支付金额: 47242.95
+                                    错误代码: 481002
+                                    错误信息: Unable to place order due to incorrect price or amount.
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.021797289999999997,
+  "quantity": 47242.95,
+  "paymentDetails": [
+    {
+      "amount": "47242.95",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:21:40] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_351USDT
+                                    价格: 0.021797189999999998
+                                    数量: 47242.95
+                                    支付金额: 47242.95
+                                    错误代码: 481002
+                                    错误信息: Unable to place order due to incorrect price or amount.
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.021797189999999998,
+  "quantity": 47242.95,
+  "paymentDetails": [
+    {
+      "amount": "47242.95",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:03] 
+                                    === BUY单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620300999999999
+                                    数量: 15558.2
+                                    支付金额: 1029.99967018
+                                    错误代码: 481002
+                                    错误信息: Unable to place order due to incorrect price or amount.
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.06620300999999999,
+  "quantity": 15558.2,
+  "paymentDetails": [
+    {
+      "amount": "1029.99967018",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:04] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620215
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620215,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:05] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620215
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620215,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:06] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620215
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620215,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:08] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620299
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620299,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:09] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620218
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:10] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620218
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:12] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620218
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:13] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620218
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:14] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620233
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620233,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:15] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620218
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:16] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620218
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:18] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620218
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:19] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620299
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620299,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:20] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620299
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620299,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                
+[2025-09-30 11:22:22] 
+                                    === SELL单下单失败 ===
+                                    代币: ALPHA_382USDT
+                                    价格: 0.06620233
+                                    数量: 15556.85
+                                    支付金额: 15556.85
+                                    错误代码: 481020
+                                    错误信息: 余额不足，下单失败。
+                                    请求数据:
+                                    {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620233,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+                                    ==================================================
+                                

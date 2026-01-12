@@ -1,0 +1,6503 @@
+
+================================================================================
+时间: 2025-09-29 01:45:16
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10105801
+自定义数量: None
+状态: success
+订单ID: 153048420
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10105801,
+  "quantity": 9.89,
+  "paymentDetails": [
+    {
+      "amount": "0.99946371",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "153048420",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:45:23
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.10105801
+自定义数量: None
+状态: success
+订单ID: 153048967
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10105801,
+  "quantity": 9.88,
+  "paymentDetails": [
+    {
+      "amount": "9.88",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "153048967",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:45:40
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.101058
+自定义数量: None
+状态: success
+订单ID: 153050161
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.101058,
+  "quantity": 9.89,
+  "paymentDetails": [
+    {
+      "amount": "0.99946362",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "153050161",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:45:48
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.101058
+自定义数量: None
+状态: success
+订单ID: 153050690
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.101058,
+  "quantity": 9.88,
+  "paymentDetails": [
+    {
+      "amount": "9.88",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "153050690",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:46:11
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10105799
+自定义数量: None
+状态: success
+订单ID: 153052039
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10105799,
+  "quantity": 9.89,
+  "paymentDetails": [
+    {
+      "amount": "0.99946352",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "153052039",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:46:19
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.10100051
+自定义数量: None
+状态: success
+订单ID: 153052444
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10100051,
+  "quantity": 9.88,
+  "paymentDetails": [
+    {
+      "amount": "9.88",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "153052444",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:46:46
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.10090596
+自定义数量: None
+状态: success
+订单ID: 153053605
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10090596,
+  "quantity": 9.88,
+  "paymentDetails": [
+    {
+      "amount": "9.88",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "153053605",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:47:16
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.100723
+自定义数量: None
+状态: success
+订单ID: 153054730
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.100723,
+  "quantity": 9.88,
+  "paymentDetails": [
+    {
+      "amount": "9.88",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "153054730",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:47:30
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22048616
+自定义数量: None
+状态: success
+订单ID: 54609574
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22048616,
+  "quantity": 4.53,
+  "paymentDetails": [
+    {
+      "amount": "0.99880230",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54609574",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:47:37
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22048616
+自定义数量: None
+状态: success
+订单ID: 54609889
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22048616,
+  "quantity": 4.52,
+  "paymentDetails": [
+    {
+      "amount": "4.52",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54609889",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:47:54
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22048615
+自定义数量: None
+状态: success
+订单ID: 54610653
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22048615,
+  "quantity": 4.53,
+  "paymentDetails": [
+    {
+      "amount": "0.99880225",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54610653",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:48:11
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22048616
+自定义数量: None
+状态: success
+订单ID: 54611489
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22048616,
+  "quantity": 4.52,
+  "paymentDetails": [
+    {
+      "amount": "4.52",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54611489",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:48:26
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22048616
+自定义数量: None
+状态: success
+订单ID: 54612172
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22048616,
+  "quantity": 4.53,
+  "paymentDetails": [
+    {
+      "amount": "0.99880230",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54612172",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:48:35
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22048616
+自定义数量: None
+状态: success
+订单ID: 54612655
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22048616,
+  "quantity": 4.52,
+  "paymentDetails": [
+    {
+      "amount": "4.52",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54612655",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:48:50
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22048616
+自定义数量: None
+状态: success
+订单ID: 54613395
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22048616,
+  "quantity": 4.53,
+  "paymentDetails": [
+    {
+      "amount": "0.99880230",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54613395",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:48:58
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22048616
+自定义数量: None
+状态: success
+订单ID: 54613767
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22048616,
+  "quantity": 4.52,
+  "paymentDetails": [
+    {
+      "amount": "4.52",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54613767",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:49:12
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22048616
+自定义数量: None
+状态: success
+订单ID: 54614403
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22048616,
+  "quantity": 4.53,
+  "paymentDetails": [
+    {
+      "amount": "0.99880230",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54614403",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:49:42
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.2204862
+自定义数量: None
+状态: success
+订单ID: 54615730
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.2204862,
+  "quantity": 4.53,
+  "paymentDetails": [
+    {
+      "amount": "0.99880248",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54615730",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 01:49:50
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22048619
+自定义数量: None
+状态: success
+订单ID: 54615977
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22048619,
+  "quantity": 4.52,
+  "paymentDetails": [
+    {
+      "amount": "4.52",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "54615977",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:01:48
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22699954
+自定义数量: None
+状态: success
+订单ID: 56305206
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22699954,
+  "quantity": 4537.45,
+  "paymentDetails": [
+    {
+      "amount": "1029.99906277",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56305206",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:01:56
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22694477
+自定义数量: None
+状态: success
+订单ID: 56306067
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22694477,
+  "quantity": 4536.99,
+  "paymentDetails": [
+    {
+      "amount": "4536.99",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56306067",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:02:10
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22694477
+自定义数量: None
+状态: success
+订单ID: 56307612
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22694477,
+  "quantity": 4538.54,
+  "paymentDetails": [
+    {
+      "amount": "1029.99791643",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56307612",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:02:18
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.2269
+自定义数量: None
+状态: success
+订单ID: 56308274
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.2269,
+  "quantity": 4538.08,
+  "paymentDetails": [
+    {
+      "amount": "4538.08",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56308274",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:02:44
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22621597
+自定义数量: None
+状态: success
+订单ID: 56310315
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22621597,
+  "quantity": 4538.08,
+  "paymentDetails": [
+    {
+      "amount": "4538.08",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56310315",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:03:08
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22530001
+自定义数量: None
+状态: success
+订单ID: 56311639
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22530001,
+  "quantity": 4538.08,
+  "paymentDetails": [
+    {
+      "amount": "4538.08",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56311639",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:03:31
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.2242176
+自定义数量: None
+状态: success
+订单ID: 56312779
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.2242176,
+  "quantity": 4538.08,
+  "paymentDetails": [
+    {
+      "amount": "4538.08",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56312779",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:03:55
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22399997
+自定义数量: None
+状态: success
+订单ID: 56313812
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22399997,
+  "quantity": 4538.08,
+  "paymentDetails": [
+    {
+      "amount": "4538.08",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56313812",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:04:11
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.100453
+自定义数量: None
+状态: success
+订单ID: 99312102
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.100453,
+  "quantity": 10253.55,
+  "paymentDetails": [
+    {
+      "amount": "1029.99985815",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99312102",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:04:19
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.100453
+自定义数量: None
+状态: success
+订单ID: 99312419
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.100453,
+  "quantity": 10252.52,
+  "paymentDetails": [
+    {
+      "amount": "10252.52",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99312419",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:04:34
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.100455
+自定义数量: None
+状态: success
+订单ID: 99312929
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.100455,
+  "quantity": 10253.34,
+  "paymentDetails": [
+    {
+      "amount": "1029.99926970",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99312929",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:04:41
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.1004521
+自定义数量: None
+状态: success
+订单ID: 99313248
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.1004521,
+  "quantity": 10252.31,
+  "paymentDetails": [
+    {
+      "amount": "10252.31",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99313248",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:04:59
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.1004521
+自定义数量: None
+状态: success
+订单ID: 99313846
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1004521,
+  "quantity": 10253.64,
+  "paymentDetails": [
+    {
+      "amount": "1029.99967064",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99313846",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:05:05
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.100455
+自定义数量: None
+状态: success
+订单ID: 99314112
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.100455,
+  "quantity": 10252.61,
+  "paymentDetails": [
+    {
+      "amount": "10252.61",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99314112",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:05:25
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.100453
+自定义数量: None
+状态: success
+订单ID: 99314842
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.100453,
+  "quantity": 10253.55,
+  "paymentDetails": [
+    {
+      "amount": "1029.99985815",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99314842",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:05:35
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.10049
+自定义数量: None
+状态: success
+订单ID: 99315245
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10049,
+  "quantity": 10252.52,
+  "paymentDetails": [
+    {
+      "amount": "10252.52",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99315245",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:05:54
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.1004561
+自定义数量: None
+状态: success
+订单ID: 99316096
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1004561,
+  "quantity": 10253.23,
+  "paymentDetails": [
+    {
+      "amount": "1029.99949820",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99316096",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:06:03
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.1004561
+自定义数量: None
+状态: success
+订单ID: 99316384
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.1004561,
+  "quantity": 10252.2,
+  "paymentDetails": [
+    {
+      "amount": "10252.2",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99316384",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:06:17
+代币: ALPHA_386USDT
+方向: BUY
+价格: 0.03191785
+自定义数量: None
+状态: success
+订单ID: 20585370
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.03191785,
+  "quantity": 32270.34,
+  "paymentDetails": [
+    {
+      "amount": "1029.99987156",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "20585370",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:06:43
+代币: ALPHA_386USDT
+方向: BUY
+价格: 0.03195
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.03195,
+  "quantity": 32237.87,
+  "paymentDetails": [
+    {
+      "amount": "1029.99994649",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:06:47
+代币: ALPHA_386USDT
+方向: SELL
+价格: 0.03195
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.03195,
+  "quantity": 32267.11,
+  "paymentDetails": [
+    {
+      "amount": "32267.11",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:06:51
+代币: ALPHA_386USDT
+方向: SELL
+价格: 0.03194936
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.03194936,
+  "quantity": 32267.11,
+  "paymentDetails": [
+    {
+      "amount": "32267.11",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:06:57
+代币: ALPHA_386USDT
+方向: SELL
+价格: 0.031949
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.031949,
+  "quantity": 32267.11,
+  "paymentDetails": [
+    {
+      "amount": "32267.11",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:07:01
+代币: ALPHA_386USDT
+方向: SELL
+价格: 0.03194614
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.03194614,
+  "quantity": 32267.11,
+  "paymentDetails": [
+    {
+      "amount": "32267.11",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:07:05
+代币: ALPHA_386USDT
+方向: SELL
+价格: 0.03193247
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.03193247,
+  "quantity": 32267.11,
+  "paymentDetails": [
+    {
+      "amount": "32267.11",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:07:09
+代币: ALPHA_386USDT
+方向: SELL
+价格: 0.031945
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.031945,
+  "quantity": 32267.11,
+  "paymentDetails": [
+    {
+      "amount": "32267.11",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:07:14
+代币: ALPHA_386USDT
+方向: SELL
+价格: 0.03193619
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.03193619,
+  "quantity": 32267.11,
+  "paymentDetails": [
+    {
+      "amount": "32267.11",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:07:37
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.100479
+自定义数量: None
+状态: success
+订单ID: 99320093
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.100479,
+  "quantity": 10250.89,
+  "paymentDetails": [
+    {
+      "amount": "1029.99917631",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99320093",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:08:00
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.100482
+自定义数量: None
+状态: success
+订单ID: 99320999
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.100482,
+  "quantity": 10250.59,
+  "paymentDetails": [
+    {
+      "amount": "1029.99978438",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99320999",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:08:08
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.10050109
+自定义数量: None
+状态: success
+订单ID: 99321299
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10050109,
+  "quantity": 10249.56,
+  "paymentDetails": [
+    {
+      "amount": "10249.56",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99321299",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:08:16
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.1005011
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.1005011,
+  "quantity": 10249.56,
+  "paymentDetails": [
+    {
+      "amount": "10249.56",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:18:54
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.10062351
+自定义数量: None
+状态: success
+订单ID: 99348125
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10062351,
+  "quantity": 10236.17,
+  "paymentDetails": [
+    {
+      "amount": "1029.99935435",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99348125",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:19:01
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.1006212
+自定义数量: None
+状态: success
+订单ID: 99348462
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.1006212,
+  "quantity": 10235.14,
+  "paymentDetails": [
+    {
+      "amount": "10235.14",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "99348462",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:19:15
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22334201
+自定义数量: None
+状态: success
+订单ID: 56376141
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22334201,
+  "quantity": 4611.76,
+  "paymentDetails": [
+    {
+      "amount": "1029.99974803",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56376141",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:19:38
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22350001
+自定义数量: None
+状态: success
+订单ID: 56377026
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22350001,
+  "quantity": 4608.5,
+  "paymentDetails": [
+    {
+      "amount": "1029.99979608",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56377026",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:19:57
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.2236
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.2236,
+  "quantity": 4606.44,
+  "paymentDetails": [
+    {
+      "amount": "1029.99998399",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:20:00
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22359999
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22359999,
+  "quantity": 4608.03,
+  "paymentDetails": [
+    {
+      "amount": "4608.03",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:20:04
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.2236
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.2236,
+  "quantity": 4608.03,
+  "paymentDetails": [
+    {
+      "amount": "4608.03",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 12:20:08
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.223601
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.223601,
+  "quantity": 4608.03,
+  "paymentDetails": [
+    {
+      "amount": "4608.03",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:00:28
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232379
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232379,
+  "quantity": 10066.08,
+  "paymentDetails": [
+    {
+      "amount": "1029.99945604",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:00:31
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232379
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232379,
+  "quantity": 10066.08,
+  "paymentDetails": [
+    {
+      "amount": "1029.99945604",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:00:32
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232379
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232379,
+  "quantity": 10066.08,
+  "paymentDetails": [
+    {
+      "amount": "1029.99945604",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:00:35
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232379
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232379,
+  "quantity": 10066.08,
+  "paymentDetails": [
+    {
+      "amount": "1029.99945604",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:00:37
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232441
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232441,
+  "quantity": 10066.02,
+  "paymentDetails": [
+    {
+      "amount": "1029.99955754",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:00:39
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232381
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232381,
+  "quantity": 10066.08,
+  "paymentDetails": [
+    {
+      "amount": "1029.99965736",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:00:41
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.1023238
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1023238,
+  "quantity": 10066.08,
+  "paymentDetails": [
+    {
+      "amount": "1029.99955670",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:01:57
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232522
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232522,
+  "quantity": 10065.94,
+  "paymentDetails": [
+    {
+      "amount": "1029.99952500",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:02:00
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.102326
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.102326,
+  "quantity": 10065.86,
+  "paymentDetails": [
+    {
+      "amount": "1029.99919036",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:02:01
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232555
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232555,
+  "quantity": 10065.91,
+  "paymentDetails": [
+    {
+      "amount": "1029.99977700",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:02:04
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.1023255
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1023255,
+  "quantity": 10065.91,
+  "paymentDetails": [
+    {
+      "amount": "1029.99927370",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:02:05
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232555
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232555,
+  "quantity": 10065.91,
+  "paymentDetails": [
+    {
+      "amount": "1029.99977700",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:02:07
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232556
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232556,
+  "quantity": 10065.91,
+  "paymentDetails": [
+    {
+      "amount": "1029.99987765",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:02:10
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232555
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232555,
+  "quantity": 10065.91,
+  "paymentDetails": [
+    {
+      "amount": "1029.99977700",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:02:12
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232558
+自定义数量: None
+状态: failed
+错误信息: {'code': '000002', 'message': 'price*quantity must be the same as sum(paymentDetail.amount)'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232558,
+  "quantity": 10065.9,
+  "paymentDetails": [
+    {
+      "amount": "1029.99905572",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000002",
+  "message": "price*quantity must be the same as sum(paymentDetail.amount)",
+  "messageDetail": null,
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:02:56
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10232605
+自定义数量: None
+状态: success
+订单ID: 156787616
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10232605,
+  "quantity": 10065.86,
+  "paymentDetails": [
+    {
+      "amount": "1029.99969365",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "156787616",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:03:19
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.1023305
+自定义数量: None
+状态: success
+订单ID: 156792585
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1023305,
+  "quantity": 10065.42,
+  "paymentDetails": [
+    {
+      "amount": "1029.99946131",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "156792585",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:03:39
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10233088
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10233088,
+  "quantity": 10065.38,
+  "paymentDetails": [
+    {
+      "amount": "1029.99919293",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:03:42
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.10233088
+自定义数量: None
+状态: success
+订单ID: 156798515
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10233088,
+  "quantity": 10064.41,
+  "paymentDetails": [
+    {
+      "amount": "10064.41",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "156798515",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:04:02
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.10242
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10242,
+  "quantity": 10064.41,
+  "paymentDetails": [
+    {
+      "amount": "10064.41",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:04:05
+代币: ALPHA_351USDT
+方向: BUY
+价格: 0.02215375
+自定义数量: None
+状态: success
+订单ID: 41099984
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.02215375,
+  "quantity": 46493.25,
+  "paymentDetails": [
+    {
+      "amount": "1029.99983718",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "41099984",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:04:14
+代币: ALPHA_351USDT
+方向: BUY
+价格: 0.02215379
+自定义数量: None
+状态: success
+订单ID: 41100380
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.02215379,
+  "quantity": 46493.17,
+  "paymentDetails": [
+    {
+      "amount": "1029.99992461",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "41100380",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:04:30
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22497654
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22497654,
+  "quantity": 4578.25,
+  "paymentDetails": [
+    {
+      "amount": "1029.99884425",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:04:33
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22497697
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22497697,
+  "quantity": 4578.24,
+  "paymentDetails": [
+    {
+      "amount": "1029.99856313",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:04:37
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22497697
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22497697,
+  "quantity": 4578.24,
+  "paymentDetails": [
+    {
+      "amount": "1029.99856313",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:04:41
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22497697
+自定义数量: None
+状态: success
+订单ID: 56628848
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22497697,
+  "quantity": 4578.24,
+  "paymentDetails": [
+    {
+      "amount": "1029.99856313",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "56628848",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:05:02
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22497696
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22497696,
+  "quantity": 4578.24,
+  "paymentDetails": [
+    {
+      "amount": "1029.99851735",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:59:42
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.1023958
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1023958,
+  "quantity": 10059.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99935220",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:59:47
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.1023958
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1023958,
+  "quantity": 10059.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99935220",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:59:51
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.1023958
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1023958,
+  "quantity": 10059.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99935220",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:59:54
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.1023958
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1023958,
+  "quantity": 10059.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99935220",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 13:59:58
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10239581
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10239581,
+  "quantity": 10059.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99945279",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:00:02
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10239581
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10239581,
+  "quantity": 10059.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99945279",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:00:06
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10239582
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10239582,
+  "quantity": 10059.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99955338",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:03:36
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10243203
+自定义数量: None
+状态: success
+订单ID: 157606750
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10243203,
+  "quantity": 10055.44,
+  "paymentDetails": [
+    {
+      "amount": "1029.99913174",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157606750",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:04:01
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10245
+自定义数量: None
+状态: success
+订单ID: 157612543
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10245,
+  "quantity": 10053.68,
+  "paymentDetails": [
+    {
+      "amount": "1029.99951600",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157612543",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:04:07
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.10245002
+自定义数量: None
+状态: success
+订单ID: 157614005
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10245002,
+  "quantity": 10052.67,
+  "paymentDetails": [
+    {
+      "amount": "10052.67",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157614005",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:04:24
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10245003
+自定义数量: None
+状态: success
+订单ID: 157618476
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10245003,
+  "quantity": 10053.68,
+  "paymentDetails": [
+    {
+      "amount": "1029.99981761",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157618476",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:04:51
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.1024502
+自定义数量: None
+状态: success
+订单ID: 157624918
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.1024502,
+  "quantity": 10053.66,
+  "paymentDetails": [
+    {
+      "amount": "1029.99947773",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157624918",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:05:18
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10247
+自定义数量: None
+状态: success
+订单ID: 157631333
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10247,
+  "quantity": 10051.72,
+  "paymentDetails": [
+    {
+      "amount": "1029.99974840",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157631333",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:05:44
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10249629
+自定义数量: None
+状态: success
+订单ID: 157637372
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10249629,
+  "quantity": 10049.14,
+  "paymentDetails": [
+    {
+      "amount": "1029.99956769",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157637372",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:05:51
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.10249629
+自定义数量: None
+状态: success
+订单ID: 157638778
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10249629,
+  "quantity": 10048.13,
+  "paymentDetails": [
+    {
+      "amount": "10048.13",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157638778",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:06:04
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.102498
+自定义数量: None
+状态: success
+订单ID: 157641630
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.102498,
+  "quantity": 10048.97,
+  "paymentDetails": [
+    {
+      "amount": "1029.99932706",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157641630",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:06:31
+代币: ALPHA_347USDT
+方向: BUY
+价格: 0.10250001
+自定义数量: None
+状态: success
+订单ID: 157647766
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10250001,
+  "quantity": 10048.77,
+  "paymentDetails": [
+    {
+      "amount": "1029.99902548",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157647766",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:06:41
+代币: ALPHA_347USDT
+方向: SELL
+价格: 0.10250009
+自定义数量: None
+状态: success
+订单ID: 157649897
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_347",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10250009,
+  "quantity": 10047.76,
+  "paymentDetails": [
+    {
+      "amount": "10047.76",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "157649897",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:06:53
+代币: ALPHA_386USDT
+方向: BUY
+价格: 0.03188581
+自定义数量: None
+状态: success
+订单ID: 21197735
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.03188581,
+  "quantity": 32302.77,
+  "paymentDetails": [
+    {
+      "amount": "1029.99998669",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "21197735",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-29 14:06:59
+代币: ALPHA_386USDT
+方向: SELL
+价格: 0.03188908
+自定义数量: None
+状态: success
+订单ID: 21198338
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_386",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.03188908,
+  "quantity": 32299.53,
+  "paymentDetails": [
+    {
+      "amount": "32299.53",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "21198338",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:10
+代币: ALPHA_351USDT
+方向: BUY
+价格: 0.021797010000000002
+自定义数量: None
+状态: failed
+错误信息: {'code': '481002', 'message': 'Unable to place order due to incorrect price or amount.'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.021797010000000002,
+  "quantity": 47254.18,
+  "paymentDetails": [
+    {
+      "amount": "1029.99983400",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481002",
+  "message": "Unable to place order due to incorrect price or amount.",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:11
+代币: ALPHA_351USDT
+方向: BUY
+价格: 0.02179702
+自定义数量: None
+状态: success
+订单ID: 43291149
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.02179702,
+  "quantity": 47254.16,
+  "paymentDetails": [
+    {
+      "amount": "1029.99987060",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "43291149",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:14
+代币: ALPHA_351USDT
+方向: SELL
+价格: 0.02179699
+自定义数量: None
+状态: success
+订单ID: 43291532
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.02179699,
+  "quantity": 47249.43,
+  "paymentDetails": [
+    {
+      "amount": "47249.43",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "43291532",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:23
+代币: ALPHA_351USDT
+方向: BUY
+价格: 0.021797100000000003
+自定义数量: None
+状态: failed
+错误信息: {'code': '481002', 'message': 'Unable to place order due to incorrect price or amount.'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.021797100000000003,
+  "quantity": 47253.99,
+  "paymentDetails": [
+    {
+      "amount": "1029.99994542",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481002",
+  "message": "Unable to place order due to incorrect price or amount.",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:24
+代币: ALPHA_351USDT
+方向: BUY
+价格: 0.02179711
+自定义数量: None
+状态: success
+订单ID: 43292670
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.02179711,
+  "quantity": 47253.97,
+  "paymentDetails": [
+    {
+      "amount": "1029.99998202",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "43292670",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:27
+代币: ALPHA_351USDT
+方向: SELL
+价格: 0.02179708
+自定义数量: None
+状态: success
+订单ID: 43293044
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.02179708,
+  "quantity": 47249.24,
+  "paymentDetails": [
+    {
+      "amount": "47249.24",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "43293044",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:35
+代币: ALPHA_351USDT
+方向: BUY
+价格: 0.021797160000000003
+自定义数量: None
+状态: failed
+错误信息: {'code': '481002', 'message': 'Unable to place order due to incorrect price or amount.'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.021797160000000003,
+  "quantity": 47253.86,
+  "paymentDetails": [
+    {
+      "amount": "1029.99994703",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481002",
+  "message": "Unable to place order due to incorrect price or amount.",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:36
+代币: ALPHA_351USDT
+方向: BUY
+价格: 0.02180001
+自定义数量: None
+状态: success
+订单ID: 43294062
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.02180001,
+  "quantity": 47247.68,
+  "paymentDetails": [
+    {
+      "amount": "1029.99989647",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "43294062",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:38
+代币: ALPHA_351USDT
+方向: SELL
+价格: 0.021797289999999997
+自定义数量: None
+状态: failed
+错误信息: {'code': '481002', 'message': 'Unable to place order due to incorrect price or amount.'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.021797289999999997,
+  "quantity": 47242.95,
+  "paymentDetails": [
+    {
+      "amount": "47242.95",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481002",
+  "message": "Unable to place order due to incorrect price or amount.",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:40
+代币: ALPHA_351USDT
+方向: SELL
+价格: 0.021797189999999998
+自定义数量: None
+状态: failed
+错误信息: {'code': '481002', 'message': 'Unable to place order due to incorrect price or amount.'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.021797189999999998,
+  "quantity": 47242.95,
+  "paymentDetails": [
+    {
+      "amount": "47242.95",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481002",
+  "message": "Unable to place order due to incorrect price or amount.",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:42
+代币: ALPHA_351USDT
+方向: SELL
+价格: 0.02179714
+自定义数量: None
+状态: success
+订单ID: 43294525
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_351",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.02179714,
+  "quantity": 47242.95,
+  "paymentDetails": [
+    {
+      "amount": "47242.95",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "43294525",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:21:50
+代币: ALPHA_382USDT
+方向: BUY
+价格: 0.06620211
+自定义数量: None
+状态: success
+订单ID: 8674684
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.06620211,
+  "quantity": 15558.41,
+  "paymentDetails": [
+    {
+      "amount": "1029.99957024",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "8674684",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:03
+代币: ALPHA_382USDT
+方向: BUY
+价格: 0.06620300999999999
+自定义数量: None
+状态: failed
+错误信息: {'code': '481002', 'message': 'Unable to place order due to incorrect price or amount.'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.06620300999999999,
+  "quantity": 15558.2,
+  "paymentDetails": [
+    {
+      "amount": "1029.99967018",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481002",
+  "message": "Unable to place order due to incorrect price or amount.",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:04
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620215
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620215,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:05
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620215
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620215,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:06
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620215
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620215,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:08
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620299
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620299,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:09
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620218
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:10
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620218
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:11
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620218
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:13
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620218
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:14
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620233
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620233,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:15
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620218
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:16
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620218
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:17
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620218
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620218,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:19
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620299
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620299,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:20
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620299
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620299,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:22:21
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06620233
+自定义数量: None
+状态: failed
+错误信息: {'code': '481020', 'message': '余额不足，下单失败。'}
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06620233,
+  "quantity": 15556.85,
+  "paymentDetails": [
+    {
+      "amount": "15556.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "481020",
+  "message": "余额不足，下单失败。",
+  "messageDetail": {
+    "title": null,
+    "type": null,
+    "icon": null,
+    "action": null,
+    "linkTitle": null,
+    "linkUrl": null
+  },
+  "data": null,
+  "success": false
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:04
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22031113
+自定义数量: None
+状态: success
+订单ID: 61729289
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22031113,
+  "quantity": 4675.2,
+  "paymentDetails": [
+    {
+      "amount": "1029.99859497",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61729289",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:07
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22031111
+自定义数量: None
+状态: success
+订单ID: 61729959
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22031111,
+  "quantity": 4674.73,
+  "paymentDetails": [
+    {
+      "amount": "4674.73",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61729959",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:15
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22031113
+自定义数量: None
+状态: success
+订单ID: 61731823
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22031113,
+  "quantity": 4675.2,
+  "paymentDetails": [
+    {
+      "amount": "1029.99859497",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61731823",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:20
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22031111
+自定义数量: None
+状态: success
+订单ID: 61732994
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22031111,
+  "quantity": 4674.73,
+  "paymentDetails": [
+    {
+      "amount": "4674.73",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61732994",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:28
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22031201
+自定义数量: None
+状态: success
+订单ID: 61734786
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22031201,
+  "quantity": 4675.18,
+  "paymentDetails": [
+    {
+      "amount": "1029.99830291",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61734786",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:31
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22031112
+自定义数量: None
+状态: success
+订单ID: 61735457
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22031112,
+  "quantity": 4674.71,
+  "paymentDetails": [
+    {
+      "amount": "4674.71",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61735457",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:39
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22031114
+自定义数量: None
+状态: success
+订单ID: 61737100
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22031114,
+  "quantity": 4675.2,
+  "paymentDetails": [
+    {
+      "amount": "1029.99864172",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61737100",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:43
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22031113
+自定义数量: None
+状态: success
+订单ID: 61738097
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22031113,
+  "quantity": 4674.73,
+  "paymentDetails": [
+    {
+      "amount": "4674.73",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61738097",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:52
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22031117
+自定义数量: None
+状态: success
+订单ID: 61739872
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22031117,
+  "quantity": 4675.2,
+  "paymentDetails": [
+    {
+      "amount": "1029.99878198",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61739872",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:30:54
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22031114000000002
+自定义数量: None
+状态: success
+订单ID: 61740543
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22031114,
+  "quantity": 4674.73,
+  "paymentDetails": [
+    {
+      "amount": "4674.73",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61740543",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:37:28
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22032042
+自定义数量: None
+状态: success
+订单ID: 61831696
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22032042,
+  "quantity": 4675.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99796350",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61831696",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:37:32
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22032049
+自定义数量: None
+状态: success
+订单ID: 61832847
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22032049,
+  "quantity": 4674.53,
+  "paymentDetails": [
+    {
+      "amount": "4674.53",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61832847",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:37:42
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22032051
+自定义数量: None
+状态: success
+订单ID: 61835774
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22032051,
+  "quantity": 4675.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99838425",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61835774",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:37:47
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22032049
+自定义数量: None
+状态: success
+订单ID: 61837111
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22032049,
+  "quantity": 4674.53,
+  "paymentDetails": [
+    {
+      "amount": "4674.53",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61837111",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:37:57
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22032100999999998
+自定义数量: None
+状态: success
+订单ID: 61840126
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22032101,
+  "quantity": 4674.99,
+  "paymentDetails": [
+    {
+      "amount": "1029.99851853",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61840126",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:38:01
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.2203205
+自定义数量: None
+状态: success
+订单ID: 61841466
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.2203205,
+  "quantity": 4674.52,
+  "paymentDetails": [
+    {
+      "amount": "4674.52",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61841466",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:38:09
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22032052
+自定义数量: None
+状态: success
+订单ID: 61843577
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22032052,
+  "quantity": 4675.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99843100",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61843577",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:38:14
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22032051
+自定义数量: None
+状态: success
+订单ID: 61844977
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22032051,
+  "quantity": 4674.53,
+  "paymentDetails": [
+    {
+      "amount": "4674.53",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61844977",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:38:21
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.2203206
+自定义数量: None
+状态: success
+订单ID: 61847278
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.2203206,
+  "quantity": 4675.0,
+  "paymentDetails": [
+    {
+      "amount": "1029.99880500",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61847278",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:38:40
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22040001
+自定义数量: None
+状态: success
+订单ID: 61851479
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22040001,
+  "quantity": 4673.32,
+  "paymentDetails": [
+    {
+      "amount": "1029.99977473",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61851479",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:38:44
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22032999
+自定义数量: None
+状态: success
+订单ID: 61852283
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22032999,
+  "quantity": 4672.85,
+  "paymentDetails": [
+    {
+      "amount": "4672.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61852283",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:38:53
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22033501
+自定义数量: None
+状态: success
+订单ID: 61854174
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22033501,
+  "quantity": 4674.69,
+  "paymentDetails": [
+    {
+      "amount": "1029.99786789",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61854174",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:39:00
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22039999000000002
+自定义数量: None
+状态: success
+订单ID: 61855444
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22039999,
+  "quantity": 4674.22,
+  "paymentDetails": [
+    {
+      "amount": "4674.22",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61855444",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:39:08
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22033601
+自定义数量: None
+状态: success
+订单ID: 61856881
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22033601,
+  "quantity": 4674.67,
+  "paymentDetails": [
+    {
+      "amount": "1029.99813586",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61856881",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:39:12
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22039999000000002
+自定义数量: None
+状态: success
+订单ID: 61857586
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22039999,
+  "quantity": 4674.2,
+  "paymentDetails": [
+    {
+      "amount": "4674.2",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61857586",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:39:22
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22040001
+自定义数量: None
+状态: success
+订单ID: 61859306
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22040001,
+  "quantity": 4673.32,
+  "paymentDetails": [
+    {
+      "amount": "1029.99977473",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61859306",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:39:26
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.2204
+自定义数量: None
+状态: success
+订单ID: 61860118
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.2204,
+  "quantity": 4672.85,
+  "paymentDetails": [
+    {
+      "amount": "4672.85",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "61860118",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:47:45
+代币: ALPHA_387USDT
+方向: BUY
+价格: 0.09745601
+自定义数量: None
+状态: success
+订单ID: 34988592
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_387",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.09745601,
+  "quantity": 10.26,
+  "paymentDetails": [
+    {
+      "amount": "0.99989866",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "34988592",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-09-30 11:47:49
+代币: ALPHA_387USDT
+方向: SELL
+价格: 0.09745058000000001
+自定义数量: None
+状态: success
+订单ID: 34989455
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_387",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.09745058,
+  "quantity": 10.25,
+  "paymentDetails": [
+    {
+      "amount": "10.25",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "34989455",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:51:53
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22531001
+自定义数量: None
+状态: success
+订单ID: 70724349
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22531001,
+  "quantity": 4571.47,
+  "paymentDetails": [
+    {
+      "amount": "1029.99795141",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70724349",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:52:02
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22532999
+自定义数量: None
+状态: success
+订单ID: 70726315
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22532999,
+  "quantity": 4571.01,
+  "paymentDetails": [
+    {
+      "amount": "4571.01",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70726315",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:52:28
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22537701
+自定义数量: None
+状态: success
+订单ID: 70732308
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22537701,
+  "quantity": 4570.12,
+  "paymentDetails": [
+    {
+      "amount": "1029.99998094",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70732308",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:52:36
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22537754000000002
+自定义数量: None
+状态: success
+订单ID: 70733999
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22537754,
+  "quantity": 4569.66,
+  "paymentDetails": [
+    {
+      "amount": "4569.66",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70733999",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:52:58
+代币: ALPHA_382USDT
+方向: BUY
+价格: 0.06632721
+自定义数量: None
+状态: success
+订单ID: 11474814
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.06632721,
+  "quantity": 15529.07,
+  "paymentDetails": [
+    {
+      "amount": "1029.99988699",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "11474814",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:53:06
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06632749
+自定义数量: None
+状态: success
+订单ID: 11475258
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06632749,
+  "quantity": 15527.51,
+  "paymentDetails": [
+    {
+      "amount": "15527.51",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "11475258",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:53:31
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22548500999999999
+自定义数量: None
+状态: success
+订单ID: 70746114
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22548501,
+  "quantity": 4567.93,
+  "paymentDetails": [
+    {
+      "amount": "1029.99974172",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70746114",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:53:38
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22548499
+自定义数量: None
+状态: success
+订单ID: 70747876
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22548499,
+  "quantity": 4567.47,
+  "paymentDetails": [
+    {
+      "amount": "4567.47",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70747876",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:54:00
+代币: ALPHA_382USDT
+方向: BUY
+价格: 0.06634451
+自定义数量: None
+状态: success
+订单ID: 11478254
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.06634451,
+  "quantity": 15525.02,
+  "paymentDetails": [
+    {
+      "amount": "1029.99984464",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "11478254",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:54:08
+代币: ALPHA_382USDT
+方向: SELL
+价格: 0.06639899
+自定义数量: None
+状态: success
+订单ID: 11478657
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_382",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.06639899,
+  "quantity": 15523.46,
+  "paymentDetails": [
+    {
+      "amount": "15523.46",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "11478657",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:54:36
+代币: ALPHA_349USDT
+方向: BUY
+价格: 0.03246101
+自定义数量: None
+状态: success
+订单ID: 21159964
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_349",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.03246101,
+  "quantity": 31730.37,
+  "paymentDetails": [
+    {
+      "amount": "1029.99985787",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "21159964",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:55:05
+代币: ALPHA_349USDT
+方向: BUY
+价格: 0.03251001
+自定义数量: None
+状态: success
+订单ID: 21161706
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_349",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.03251001,
+  "quantity": 31682.54,
+  "paymentDetails": [
+    {
+      "amount": "1029.99969222",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "21161706",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:55:33
+代币: ALPHA_349USDT
+方向: BUY
+价格: 0.03256001
+自定义数量: None
+状态: success
+订单ID: 21163297
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_349",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.03256001,
+  "quantity": 31633.89,
+  "paymentDetails": [
+    {
+      "amount": "1029.99977473",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "21163297",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:55:41
+代币: ALPHA_349USDT
+方向: SELL
+价格: 0.03256999
+自定义数量: None
+状态: success
+订单ID: 21163766
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_349",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.03256999,
+  "quantity": 31630.72,
+  "paymentDetails": [
+    {
+      "amount": "31630.72",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "21163766",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:56:08
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22609658
+自定义数量: None
+状态: success
+订单ID: 70775058
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22609658,
+  "quantity": 4555.57,
+  "paymentDetails": [
+    {
+      "amount": "1029.99879695",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70775058",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:56:36
+代币: ALPHA_373USDT
+方向: BUY
+价格: 0.22620001
+自定义数量: None
+状态: success
+订单ID: 70779052
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.22620001,
+  "quantity": 4553.49,
+  "paymentDetails": [
+    {
+      "amount": "1029.99948353",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70779052",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:56:44
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.22599999
+自定义数量: None
+状态: success
+订单ID: 70780135
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.22599999,
+  "quantity": 4553.03,
+  "paymentDetails": [
+    {
+      "amount": "4553.03",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70780135",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:57:12
+代币: ALPHA_373USDT
+方向: SELL
+价格: 0.2256111
+自定义数量: None
+状态: success
+订单ID: 70783613
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_373",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.2256111,
+  "quantity": 4553.03,
+  "paymentDetails": [
+    {
+      "amount": "4553.03",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "70783613",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:57:37
+代币: ALPHA_372USDT
+方向: BUY
+价格: 0.10248101
+自定义数量: None
+状态: success
+订单ID: 102984939
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "BUY",
+  "price": 0.10248101,
+  "quantity": 10050.64,
+  "paymentDetails": [
+    {
+      "amount": "1029.99973834",
+      "paymentWalletType": "CARD"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "102984939",
+  "success": true
+}
+================================================================================
+
+================================================================================
+时间: 2025-10-01 08:57:45
+代币: ALPHA_372USDT
+方向: SELL
+价格: 0.10248099000000001
+自定义数量: None
+状态: success
+订单ID: 102985440
+请求参数:
+  URL: https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place
+  Payload: {
+  "baseAsset": "ALPHA_372",
+  "quoteAsset": "USDT",
+  "side": "SELL",
+  "price": 0.10248099,
+  "quantity": 10049.63,
+  "paymentDetails": [
+    {
+      "amount": "10049.63",
+      "paymentWalletType": "ALPHA"
+    }
+  ]
+}
+响应信息:
+  状态码: 200
+  响应数据: {
+  "code": "000000",
+  "message": null,
+  "messageDetail": null,
+  "data": "102985440",
+  "success": true
+}
+================================================================================

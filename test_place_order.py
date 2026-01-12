@@ -1,354 +1,257 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试下单功能脚本
+测试 place_single_order 接口
+检查缺失的请求头字段
 """
 
 import requests
 import json
-import time
-from datetime import datetime, timedelta
+import uuid
+from binance_api import BinanceAPI
+from logger import Logger
 
-def get_latest_price(symbol):
-    """获取最新价格"""
-    try:
-        url = "https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines"
-        params = {
-            'symbol': symbol,
-            'interval': '1s',  # 1秒间隔获取最新价格
-            'limit': 1  # 只获取1条K线数据
-        }
-        
-        headers = {
-            'Accept': '*/*',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Baggage': 'sentry-environment=prod,sentry-release=20250924-d1d0004c-2900,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=847f639347bc49be967b6777b03a413c,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
-            'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-            'Clienttype': 'web',
-            'Content-Type': 'application/json',
-            'Cookie': 'theme=dark; bnc-uuid=e420e928-1b68-4ea2-991d-016cf1dc6f8b; _gid=GA1.2.951612344.1758819202; BNC_FV_KEY=33ea495bf3a5a79b884c5845faf9ca5e77e32ab5; ref=FEQE7YL0; lang=zh-CN; language=zh-CN; se_sd=AQPAhWVkMHTCRVWMRBgVgZZDBDA9TEQUlsN5aVEd1lcUgVVNWV4A1; se_gd=QZaVlDhAHQRA1IaRXUBMgZZAFVQcUBQUlpc5aVEd1lcUgG1NWVAP1; se_gsd=YDo2XDtWNTAgCSMrNAgnMzkECQIaBQYaV11BUl1QVllaJ1NT1; currentAccount=; logined=y; BNC-Location=CN; aws-waf-token=6a2e990f-c746-49ff-9096-b327596dd9d8:BgoAZZh3lccKAAAA:frs4tlGhn0srGqMVNdKjOUR6E1AopfP/a3uZHcPKLSFBKkQjYpgbOsjbsL/PuL7PzWy1a6xg+L7J/Hnb9L5xAb88hAOBFBDOL358HxuVvNgpN41Rqv/RGGnERAcxnm6cSRWMXbe+yCluzdyiGMFLc5oMXF4CTn0fUmdeBrXbkaCX0HYuT8/3xnMjVTs2E0cbasI=; _gcl_au=1.1.1119987010.1758819849; changeBasisTimeZone=; userPreferredCurrency=USD_USD; BNC_FV_KEY_T=101-wc4WPYO%2B3Rb7Mg3HHaWxA6MHkormTgmyD9rGzTzVOKwHQvo55bJ2lzMT%2BbZUdat95BcgrHgRyTlg0kkZjcN0DQ%3D%3D-IUTOKhlcGzLtvhtzcXChZg%3D%3D-8c; BNC_FV_KEY_EXPIRE=1758967585812; r20t=web.AE9CB0EBD5845F2CB6ADCA9667C1736A; r30t=1; cr00=22338F8E07EA42F2264AA39F47E723B7; d1og=web.1162735228.AFF6FA74AC2CB13655E400A8520AB977; r2o1=web.1162735228.F504CC1AB5DF2E043AFA12A07986B4D3; f30l=web.1162735228.BC38C5894270AA297AD43BECCDC49B3E; p20t=web.1162735228.94F8BF83B266E52880AC361D181FD0FE; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%221162735228%22%2C%22first_id%22%3A%2219981cb2b079d5-0702e12ae9987a-26061951-3686400-19981cb2b08181c%22%2C%22props%22%3A%7B%22aws_waf_referrer%22%3A%22%7B%5C%22referrer%5C%22%3A%5C%22https%3A%2F%2Falpha123.uk%2F%5C%22%7D%22%2C%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%7D%2C%22identities%22%3A%22eyIkaWRlbnRpdHlfY29va2llX2lkIjoiMTk5ODFjYjJiMDc5ZDUtMDcwMmUxMmFlOTk4N2EtMjYwNjE5NTEtMzY4NjQwMC0xOTk4MWNiMmIwODE4MWMiLCIkaWRlbnRpdHlfbG9naW5faWQiOiIxMTYyNzM1MjI4In0%3D%22%2C%22history_login_id%22%3A%7B%22name%22%3A%22%24identity_login_id%22%2C%22value%22%3A%221162735228%22%7D%2C%22%24device_id%22%3A%2219981dc7d84bdb-0b69a1775381dc8-26061951-3686400-19981dc7d851c20%22%7D; _uetsid=a955dd009a3111f08ea99b841f36689a; _uetvid=a955d8909a3111f08c0c25e413aeab0c; _ga_3WP50LGEEC=GS2.1.s1758950440$o6$g1$t1758955852$j60$l0$h0; _ga=GA1.2.1952928982.1758819202; OptanonConsent=isGpcEnabled=0&datestamp=Sat+Sep+27+2025+16%3A06%3A03+GMT%2B0800+(%E4%B8%AD%E5%9B%BD%E6%A0%87%E5%87%86%E6%97%B6%E9%97%B4)&version=202506.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=7e0430b4-07eb-4780-a2e2-48b9be3dd13c&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0003%3A1%2CC0004%3A1%2CC0002%3A1&AwaitingReconsent=false',
-            'csrftoken': '231efb54f001934bd7572f79523397f0',
-            'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQyMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-            'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-            'lang': 'zh-CN',
-            'Priority': 'u=1, i',
-            'Referer': 'https://www.binance.com/zh-CN/alpha/bsc/0xe6df05ce8c8301223373cf5b969afcb1498c5528',
-            'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
-            'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"Windows"',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sentry-Trace': '847f639347bc49be967b6777b03a413c-ac242fc8bf0e51e2-0',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
-            'X-Passthrough-Token': '',
-            'X-Trace-Id': '000f2190-8b35-4cb1-aa27-d62a5017a918',
-            'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
-        }
-        
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        response.raise_for_status()
-        
-        data = response.json()
-        
-        if data.get('code') == '000000' and data.get('success') == True:
-            kline_data = data.get('data', [])
-            if kline_data and len(kline_data) > 0:
-                kline = kline_data[0]
-                return float(kline[4])  # 收盘价（最新价格）
-            else:
-                return None
-        else:
-            print(f"获取价格失败: {data.get('message', '未知错误')}")
-            return None
-            
-    except Exception as e:
-        print(f"获取价格异常: {str(e)}")
-        return None
+def compare_headers():
+    """对比当前代码生成的headers和网页端完整的headers"""
+    
+    # 从配置或环境变量读取认证信息（需要手动设置）
+    csrf_token = "YOUR_CSRF_TOKEN_HERE"  # 替换为实际的 csrf_token
+    cookie = "YOUR_COOKIE_HERE"  # 替换为实际的 cookie
+    
+    # 网页端完整的 headers（用户提供的）
+    web_headers = {
+        'accept': '*/*',
+        'accept-encoding': 'gzip, deflate, br, zstd',
+        'accept-language': 'zh-CN,zh;q=0.9',
+        'baggage': 'sentry-environment=prod,sentry-release=20251022-1b018171-3173,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=154e4e965e014b0698c50922665cb44f,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
+        'bnc-uuid': '63c297dc-98e7-47d8-9c22-69cf63b0a5eb',
+        'clienttype': 'web',
+        'content-type': 'application/json',
+        'cookie': cookie,
+        'csrftoken': csrf_token,
+        'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MS4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQyMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MS4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6Ijg3MDY5NDc2M2YwN2I2M2MxODJkNDQzZjZiNzJlZDk5IiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
+        'fvideo-id': '33e38051d12bae91a1efbd0a56d2dc425f21a646',
+        'lang': 'zh-CN',
+        'origin': 'https://www.binance.com',  # ⚠️ 缺失的字段
+        'priority': 'u=1, i',
+        'referer': 'https://www.binance.com/zh-CN/alpha/bsc/0x81a7da4074b8e0ed51bea40f9dcbdf4d9d4832b4',
+        'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'sentry-trace': '154e4e965e014b0698c50922665cb44f-aaecb1a608e42c8b-0',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+        'x-passthrough-token': '',  # ⚠️ 注意：空字符串
+        'x-trace-id': '5fb7b1a4-1b7f-468a-881b-c1cc9fc7e49e',  # ⚠️ 缺失的字段
+        'x-ui-request-trace': '5fb7b1a4-1b7f-468a-881b-c1cc9fc7e49e',  # ⚠️ 缺失的字段
+    }
+    
+    # 使用代码生成的 headers
+    extra_headers = {
+        'device-info': web_headers['device-info'],
+        'fvideo-id': web_headers['fvideo-id'],
+        'bnc-uuid': web_headers['bnc-uuid'],
+        'user-agent': web_headers['user-agent'],
+        'baggage': web_headers['baggage'],
+        'sentry-trace': web_headers['sentry-trace'],
+    }
+    
+    logger = Logger()
+    api = BinanceAPI(
+        csrf_token=csrf_token,
+        cookie=cookie,
+        logger=logger,
+        extra_headers=extra_headers
+    )
+    
+    # 获取代码生成的 headers
+    code_headers = BinanceAPI.build_request_headers(csrf_token, cookie, extra_headers)
+    
+    print("=" * 80)
+    print("对比分析：代码生成的 headers vs 网页端完整的 headers")
+    print("=" * 80)
+    print("\n1. 缺失的关键字段：")
+    print("-" * 80)
+    
+    missing_fields = []
+    if 'origin' not in code_headers:
+        missing_fields.append('origin')
+        print("❌ origin: https://www.binance.com")
+    
+    if 'x-trace-id' not in code_headers:
+        missing_fields.append('x-trace-id')
+        print("❌ x-trace-id: (需要动态生成)")
+    
+    if 'x-ui-request-trace' not in code_headers:
+        missing_fields.append('x-ui-request-trace')
+        print("❌ x-ui-request-trace: (需要动态生成)")
+    
+    print("\n2. 字段名称大小写差异：")
+    print("-" * 80)
+    if 'Bnc-Uuid' in code_headers:
+        print(f"⚠️  代码使用: 'Bnc-Uuid' = {code_headers.get('Bnc-Uuid', 'N/A')}")
+        print(f"   网页使用: 'bnc-uuid' = {web_headers.get('bnc-uuid', 'N/A')}")
+    
+    print("\n3. 字段值差异：")
+    print("-" * 80)
+    
+    # 检查 Referer 是否更具体
+    if code_headers.get('Referer') != web_headers.get('referer'):
+        print(f"⚠️  Referer 差异：")
+        print(f"   代码: {code_headers.get('Referer', 'N/A')}")
+        print(f"   网页: {web_headers.get('referer', 'N/A')}")
+    
+    # 检查 Sec-Ch-Ua 版本
+    if code_headers.get('Sec-Ch-Ua') != web_headers.get('sec-ch-ua'):
+        print(f"⚠️  Sec-Ch-Ua 版本差异：")
+        print(f"   代码: {code_headers.get('Sec-Ch-Ua', 'N/A')}")
+        print(f"   网页: {web_headers.get('sec-ch-ua', 'N/A')}")
+    
+    print("\n4. URL 路径检查：")
+    print("-" * 80)
+    code_url = "https://www.binance.com/bapi/asset/v1/private/alpha-trade/order/place"
+    web_url = "https://www.binance.com/bapi/asset/v1/private/alpha-trade/order/place"
+    print(f"✓  代码使用: {code_url}")
+    print(f"  网页使用: {web_url}")
+    if code_url == web_url:
+        print("  ✅ URL 路径匹配")
+    
+    print("\n" + "=" * 80)
+    print("总结：导致 'invalid token' 错误的可能原因")
+    print("=" * 80)
+    print("根据分析，以下字段缺失可能导致认证失败：")
+    print("")
+    print("🔴 关键缺失字段（最可能导致 invalid token）：")
+    print("   1. 'Origin: https://www.binance.com' - CORS 验证需要")
+    print("   2. 'X-Trace-Id' - 请求追踪ID（可能是安全验证的一部分）")
+    print("   3. 'X-Ui-Request-Trace' - UI请求追踪ID")
+    print("")
+    print("🟡 次要问题：")
+    print("   4. 'bnc-uuid' 字段大小写：代码使用 'Bnc-Uuid'，网页使用 'bnc-uuid'")
+    print("   5. Sec-Ch-Ua 版本：代码是 Chrome 140，网页是 Chrome 141")
+    print("   6. Referer 路径：代码是通用路径，网页是具体代币页面")
+    print("")
+    print("建议修复优先级：")
+    print("   ✅ 高优先级：添加 Origin、X-Trace-Id、X-Ui-Request-Trace")
+    print("   ⚠️  中优先级：统一 bnc-uuid 大小写")
+    print("   ⚪ 低优先级：更新 Chrome 版本号")
+    
+    return missing_fields, code_url != web_url
 
-def test_place_order():
-    """测试下单功能"""
+
+def test_place_order_with_full_headers():
+    """使用完整的headers测试下单接口"""
     
-    # 配置信息
-    csrf_token = "231efb54f001934bd7572f79523397f0"  # 请替换为你的CSRF token
-    symbol = "ALPHA_22USDT"
-    base_asset = symbol.replace('USDT', '')
+    # ⚠️ 需要手动设置这些值
+    csrf_token = "YOUR_CSRF_TOKEN_HERE"
+    cookie = "YOUR_COOKIE_HERE"
     
-    print(f"开始测试下单功能...")
-    print(f"代币: {symbol}")
-    print(f"基础资产: {base_asset}")
-    print("-" * 50)
+    if csrf_token == "YOUR_CSRF_TOKEN_HERE" or cookie == "YOUR_COOKIE_HERE":
+        print("⚠️  请先设置 csrf_token 和 cookie！")
+        return
     
-    # 获取最新价格
-    print("正在获取最新价格...")
-    latest_price = get_latest_price(symbol)
-    if not latest_price:
-        print("❌ 获取价格失败，使用默认价格")
-        latest_price = 48.0
-    else:
-        print(f"✅ 获取到最新价格: ${latest_price}")
+    # 生成 trace ID
+    trace_id = str(uuid.uuid4())
     
-    print("-" * 50)
-    
-    # 下单URL
-    url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/place"
-    
-    # 请求头
+    # 完整的 headers（基于网页端）
     headers = {
         'Accept': '*/*',
         'Accept-Encoding': 'gzip, deflate, br, zstd',
         'Accept-Language': 'zh-CN,zh;q=0.9',
-        'Baggage': 'sentry-environment=prod,sentry-release=20250924-d1d0004c-2900,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=847f639347bc49be967b6777b03a413c,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
-        'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
         'Clienttype': 'web',
         'Content-Type': 'application/json',
-        'Cookie': 'theme=dark; bnc-uuid=e420e928-1b68-4ea2-991d-016cf1dc6f8b; _gid=GA1.2.951612344.1758819202; BNC_FV_KEY=33ea495bf3a5a79b884c5845faf9ca5e77e32ab5; ref=FEQE7YL0; lang=zh-CN; language=zh-CN; se_sd=AQPAhWVkMHTCRVWMRBgVgZZDBDA9TEQUlsN5aVEd1lcUgVVNWV4A1; se_gd=QZaVlDhAHQRA1IaRXUBMgZZAFVQcUBQUlpc5aVEd1lcUgG1NWVAP1; se_gsd=YDo2XDtWNTAgCSMrNAgnMzkECQIaBQYaV11BUl1QVllaJ1NT1; currentAccount=; logined=y; BNC-Location=CN; aws-waf-token=6a2e990f-c746-49ff-9096-b327596dd9d8:BgoAZZh3lccKAAAA:frs4tlGhn0srGqMVNdKjOUR6E1AopfP/a3uZHcPKLSFBKkQjYpgbOsjbsL/PuL7PzWy1a6xg+L7J/Hnb9L5xAb88hAOBFBDOL358HxuVvNgpN41Rqv/RGGnERAcxnm6cSRWMXbe+yCluzdyiGMFLc5oMXF4CTn0fUmdeBrXbkaCX0HYuT8/3xnMjVTs2E0cbasI=; _gcl_au=1.1.1119987010.1758819849; changeBasisTimeZone=; userPreferredCurrency=USD_USD; BNC_FV_KEY_T=101-wc4WPYO%2B3Rb7Mg3HHaWxA6MHkormTgmyD9rGzTzVOKwHQvo55bJ2lzMT%2BbZUdat95BcgrHgRyTlg0kkZjcN0DQ%3D%3D-IUTOKhlcGzLtvhtzcXChZg%3D%3D-8c; BNC_FV_KEY_EXPIRE=1758967585812; r20t=web.AE9CB0EBD5845F2CB6ADCA9667C1736A; r30t=1; cr00=22338F8E07EA42F2264AA39F47E723B7; d1og=web.1162735228.AFF6FA74AC2CB13655E400A8520AB977; r2o1=web.1162735228.F504CC1AB5DF2E043AFA12A07986B4D3; f30l=web.1162735228.BC38C5894270AA297AD43BECCDC49B3E; p20t=web.1162735228.94F8BF83B266E52880AC361D181FD0FE; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%221162735228%22%2C%22first_id%22%3A%2219981cb2b079d5-0702e12ae9987a-26061951-3686400-19981cb2b08181c%22%2C%22props%22%3A%7B%22aws_waf_referrer%22%3A%22%7B%5C%22referrer%5C%22%3A%5C%22https%3A%2F%2Falpha123.uk%2F%5C%22%7D%22%2C%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%7D%2C%22identities%22%3A%22eyIkaWRlbnRpdHlfY29va2llX2lkIjoiMTk5ODFjYjJiMDc5ZDUtMDcwMmUxMmFlOTk4N2EtMjYwNjE5NTEtMzY4NjQwMC0xOTk4MWNiMmIwODE4MWMiLCIkaWRlbnRpdHlfbG9naW5faWQiOiIxMTYyNzM1MjI4In0%3D%22%2C%22history_login_id%22%3A%7B%22name%22%3A%22%24identity_login_id%22%2C%22value%22%3A%221162735228%22%7D%2C%22%24device_id%22%3A%2219981dc7d84bdb-0b69a1775381dc8-26061951-3686400-19981dc7d851c20%22%7D; _uetsid=a955dd009a3111f08ea99b841f36689a; _uetvid=a955d8909a3111f08c0c25e413aeab0c; _ga_3WP50LGEEC=GS2.1.s1758950440$o6$g1$t1758955852$j60$l0$h0; _ga=GA1.2.1952928982.1758819202; OptanonConsent=isGpcEnabled=0&datestamp=Sat+Sep+27+2025+16%3A06%3A03+GMT%2B0800+(%E4%B8%AD%E5%9B%BD%E6%A0%87%E5%87%86%E6%97%B6%E9%97%B4)&version=202506.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=7e0430b4-07eb-4780-a2e2-48b9be3dd13c&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0003%3A1%2CC0004%3A1%2CC0002%3A1&AwaitingReconsent=false',
+        'Cookie': cookie,
         'csrftoken': csrf_token,
-        'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQyMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-        'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
         'lang': 'zh-CN',
+        'Origin': 'https://www.binance.com',  # ⚠️ 关键字段
         'Priority': 'u=1, i',
-        'Referer': 'https://www.binance.com/zh-CN/alpha/bsc/0xe6df05ce8c8301223373cf5b969afcb1498c5528',
-        'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
+        'Referer': 'https://www.binance.com/zh-CN/alpha',
+        'Sec-Ch-Ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
         'Sec-Ch-Ua-Mobile': '?0',
         'Sec-Ch-Ua-Platform': '"Windows"',
         'Sec-Fetch-Dest': 'empty',
         'Sec-Fetch-Mode': 'cors',
         'Sec-Fetch-Site': 'same-origin',
-        'Sentry-Trace': '847f639347bc49be967b6777b03a413c-ac242fc8bf0e51e2-0',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
         'X-Passthrough-Token': '',
-        'X-Trace-Id': '000f2190-8b35-4cb1-aa27-d62a5017a918',
-        'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
+        'X-Trace-Id': trace_id,  # ⚠️ 关键字段
+        'X-Ui-Request-Trace': trace_id,  # ⚠️ 关键字段
     }
     
-    # 计算购买数量：先用1025 / 最新价格得到代币份额
-    base_amount = 1025
-    working_quantity = base_amount / latest_price
+    # 添加额外的字段（如果有）
+    extra_headers_dict = {
+        'baggage': '',
+        'bnc-uuid': '',
+        'device-info': '',
+        'fvideo-id': '',
+        'sentry-trace': '',
+    }
     
-    # 格式化数值精度 - 舍去4位小数点后的部分
-    working_quantity_formatted = int(working_quantity * 10000) / 10000  # 舍去4位小数点后的部分
+    for key, value in extra_headers_dict.items():
+        if value:
+            headers[key] = value
     
-    # 用格式化后的代币份额 * 最新价格得到传参的amount
-    payment_amount = working_quantity_formatted * latest_price
-    payment_amount_formatted = int(payment_amount * 100000000) / 100000000  # 舍去8位小数点后的部分
+    # 使用新的 URL 路径
+    url = "https://www.binance.com/bapi/asset/v1/private/alpha-trade/order/place"  # ⚠️ 注意路径
     
-    # 构建请求数据
+    # 测试 payload（示例）
     payload = {
-        "baseAsset": base_asset,
-        "paymentDetails": [{"amount": str(payment_amount_formatted), "paymentWalletType": "CARD"}],
-        "pendingPrice": latest_price,
+        "baseAsset": "ALPHA_304",
         "quoteAsset": "USDT",
-        "workingPrice": latest_price,
-        "workingQuantity": working_quantity_formatted,
-        "workingSide": "BUY"
+        "side": "BUY",
+        "price": "1.0",
+        "quantity": "100",
+        "paymentDetails": [{
+            "amount": "100.0",
+            "paymentWalletType": "CARD"
+        }]
     }
     
-    print(f"计算信息:")
-    print(f"  基础金额: ${base_amount}")
-    print(f"  最新价格: ${latest_price}")
-    print(f"  原始代币份额: {working_quantity:.8f}")
-    print(f"  舍去后代币份额: {working_quantity_formatted}")
-    print(f"  原始支付金额: {payment_amount:.8f}")
-    print(f"  舍去后支付金额: {payment_amount_formatted}")
-    print("-" * 50)
-    
-    print("请求数据:")
-    print(json.dumps(payload, indent=2, ensure_ascii=False))
-    print("-" * 50)
+    print("=" * 80)
+    print("测试下单接口（使用完整headers）")
+    print("=" * 80)
+    print(f"\nURL: {url}")
+    print(f"\nHeaders (关键字段):")
+    print(f"  Origin: {headers.get('Origin')}")
+    print(f"  X-Trace-Id: {headers.get('X-Trace-Id')}")
+    print(f"  X-Ui-Request-Trace: {headers.get('X-Ui-Request-Trace')}")
+    print(f"\nPayload: {json.dumps(payload, indent=2, ensure_ascii=False)}")
     
     try:
-        # 发送下单请求
-        print("发送下单请求...")
         response = requests.post(url, headers=headers, json=payload, timeout=10)
-        
-        print(f"响应状态码: {response.status_code}")
-        print(f"响应头: {dict(response.headers)}")
-        print("-" * 50)
+        print(f"\n响应状态码: {response.status_code}")
+        print(f"响应内容: {response.text}")
         
         if response.status_code == 200:
             data = response.json()
-            print("响应内容:")
-            print(json.dumps(data, indent=2, ensure_ascii=False))
-            print("-" * 50)
-            
-            if data.get('code') == '000000' and 'data' in data:
-                working_order_id = data['data'].get('workingOrderId')
-                pending_order_id = data['data'].get('pendingOrderId')
-                print(f"✅ 下单成功!")
-                print(f"买单ID: {working_order_id}")
-                print(f"卖单ID: {pending_order_id}")
-                
-                # 等待5秒后查询订单状态
-                print("\n等待5秒后查询订单状态...")
-                time.sleep(5)
-                
-                # 查询订单历史
-                check_order_status(working_order_id, pending_order_id)
-                
+            if data.get('code') == '000000':
+                print("\n✅ 请求成功！")
             else:
-                error_code = data.get('code', 'unknown')
-                error_msg = data.get('message', 'unknown error')
-                print(f"❌ 下单失败 - 错误代码: {error_code}, 错误信息: {error_msg}")
+                print(f"\n❌ API错误: {data.get('message', '未知错误')}")
         else:
-            print(f"❌ HTTP请求失败 - 状态码: {response.status_code}")
-            print(f"响应内容: {response.text}")
+            print(f"\n❌ HTTP错误: {response.status_code}")
             
     except Exception as e:
-        print(f"❌ 下单异常: {str(e)}")
+        print(f"\n❌ 请求异常: {str(e)}")
 
-def check_order_status(working_order_id, pending_order_id):
-    """查询订单状态"""
-    print(f"查询订单状态...")
-    print(f"买单ID: {working_order_id}")
-    print(f"卖单ID: {pending_order_id}")
-    print("-" * 50)
-    
-    try:
-        # 获取今天和明天的时间戳
-        now = datetime.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        tomorrow_start = today_start + timedelta(days=1)
-        
-        start_time = int(today_start.timestamp() * 1000)
-        end_time = int(tomorrow_start.timestamp() * 1000)
-        
-        url = "https://www.binance.com/bapi/defi/v1/private/alpha-trade/order/get-order-history-web"
-        params = {
-            'page': 1,
-            'rows': 50,
-            'startTime': start_time,
-            'endTime': end_time
-        }
-        
-        headers = {
-            'Accept': '*/*',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Baggage': 'sentry-environment=prod,sentry-release=20250924-d1d0004c-2900,sentry-public_key=9445af76b2ba747e7b574485f2c998f7,sentry-trace_id=847f639347bc49be967b6777b03a413c,sentry-sample_rate=0.01,sentry-transaction=%2Falpha%2F%24chainSymbol%2F%24contractAddress,sentry-sampled=false',
-            'Bnc-Uuid': 'e420e928-1b68-4ea2-991d-016cf1dc6f8b',
-            'Clienttype': 'web',
-            'Content-Type': 'application/json',
-            'Cookie': 'theme=dark; bnc-uuid=e420e928-1b68-4ea2-991d-016cf1dc6f8b; _gid=GA1.2.951612344.1758819202; BNC_FV_KEY=33ea495bf3a5a79b884c5845faf9ca5e77e32ab5; ref=FEQE7YL0; lang=zh-CN; language=zh-CN; se_sd=AQPAhWVkMHTCRVWMRBgVgZZDBDA9TEQUlsN5aVEd1lcUgVVNWV4A1; se_gd=QZaVlDhAHQRA1IaRXUBMgZZAFVQcUBQUlpc5aVEd1lcUgG1NWVAP1; se_gsd=YDo2XDtWNTAgCSMrNAgnMzkECQIaBQYaV11BUl1QVllaJ1NT1; currentAccount=; logined=y; BNC-Location=CN; aws-waf-token=6a2e990f-c746-49ff-9096-b327596dd9d8:BgoAZZh3lccKAAAA:frs4tlGhn0srGqMVNdKjOUR6E1AopfP/a3uZHcPKLSFBKkQjYpgbOsjbsL/PuL7PzWy1a6xg+L7J/Hnb9L5xAb88hAOBFBDOL358HxuVvNgpN41Rqv/RGGnERAcxnm6cSRWMXbe+yCluzdyiGMFLc5oMXF4CTn0fUmdeBrXbkaCX0HYuT8/3xnMjVTs2E0cbasI=; _gcl_au=1.1.1119987010.1758819849; changeBasisTimeZone=; userPreferredCurrency=USD_USD; BNC_FV_KEY_T=101-wc4WPYO%2B3Rb7Mg3HHaWxA6MHkormTgmyD9rGzTzVOKwHQvo55bJ2lzMT%2BbZUdat95BcgrHgRyTlg0kkZjcN0DQ%3D%3D-IUTOKhlcGzLtvhtzcXChZg%3D%3D-8c; BNC_FV_KEY_EXPIRE=1758967585812; r20t=web.AE9CB0EBD5845F2CB6ADCA9667C1736A; r30t=1; cr00=22338F8E07EA42F2264AA39F47E723B7; d1og=web.1162735228.AFF6FA74AC2CB13655E400A8520AB977; r2o1=web.1162735228.F504CC1AB5DF2E043AFA12A07986B4D3; f30l=web.1162735228.BC38C5894270AA297AD43BECCDC49B3E; p20t=web.1162735228.94F8BF83B266E52880AC361D181FD0FE; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%221162735228%22%2C%22first_id%22%3A%2219981cb2b079d5-0702e12ae9987a-26061951-3686400-19981cb2b08181c%22%2C%22props%22%3A%7B%22aws_waf_referrer%22%3A%22%7B%5C%22referrer%5C%22%3A%5C%22https%3A%2F%2Falpha123.uk%2F%5C%22%7D%22%2C%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%7D%2C%22identities%22%3A%22eyIkaWRlbnRpdHlfY29va2llX2lkIjoiMTk5ODFjYjJiMDc5ZDUtMDcwMmUxMmFlOTk4N2EtMjYwNjE5NTEtMzY4NjQwMC0xOTk4MWNiMmIwODE4MWMiLCIkaWRlbnRpdHlfbG9naW5faWQiOiIxMTYyNzM1MjI4In0%3D%22%2C%22history_login_id%22%3A%7B%22name%22%3A%22%24identity_login_id%22%2C%22value%22%3A%221162735228%22%7D%2C%22%24device_id%22%3A%2219981dc7d84bdb-0b69a1775381dc8-26061951-3686400-19981dc7d851c20%22%7D; _uetsid=a955dd009a3111f08ea99b841f36689a; _uetvid=a955d8909a3111f08c0c25e413aeab0c; _ga_3WP50LGEEC=GS2.1.s1758950440$o6$g1$t1758955852$j60$l0$h0; _ga=GA1.2.1952928982.1758819202; OptanonConsent=isGpcEnabled=0&datestamp=Sat+Sep+27+2025+16%3A06%3A03+GMT%2B0800+(%E4%B8%AD%E5%9B%BD%E6%A0%87%E5%87%86%E6%97%B6%E9%97%B4)&version=202506.1.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=7e0430b4-07eb-4780-a2e2-48b9be3dd13c&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0003%3A1%2CC0004%3A1%2CC0002%3A1&AwaitingReconsent=false',
-            'csrftoken': '231efb54f001934bd7572f79523397f0',
-            'device-info': 'eyJzY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsImF2YWlsYWJsZV9zY3JlZW5fcmVzb2x1dGlvbiI6IjI1NjAsMTQ0MCIsInN5c3RlbV92ZXJzaW9uIjoiV2luZG93cyAxMCIsImJyYW5kX21vZGVsIjoidW5rbm93biIsInN5c3RlbV9sYW5nIjoiemgtQ04iLCJ0aW1lem9uZSI6IkdNVCswODowMCIsInRpbWV6b25lT2Zmc2V0IjotNDgwLCJ1c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0MC4wLjAuMCBTYWZhcmkvNTM3LjM2IiwibGlzdF9wbHVnaW4iOiJQREYgVmlld2VyLENocm9tZSBQREYgVmlld2VyLENocm9taXVtIFBERiBWaWV3ZXIsTWljcm9zb2Z0IEVkZ2UgUERGIFZpZXdlcixXZWJLaXQgYnVpbHQtaW4gUERGIiwiY2FudmFzX2NvZGUiOiI2NjAzODQyMyIsIndlYmdsX3ZlbmRvciI6Ikdvb2dsZSBJbmMuIChOVklESUEpIiwid2ViZ2xfcmVuZGVyZXIiOiJBTkdMRSAoTlZJRElBLCBOVklESUEgR2VGb3JjZSBSVFggMzA3MCAoMHgwMDAwMjQ4OCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSkiLCJhdWRpbyI6IjEyNC4wNDM0NzUyNzUxNjA3NCIsInBsYXRmb3JtIjoiV2luMzIiLCJ3ZWJfdGltZXpvbmUiOiJBc2lhL1NoYW5naGFpIiwiZGV2aWNlX25hbWUiOiJDaHJvbWUgVjE0MC4wLjAuMCAoV2luZG93cykiLCJmaW5nZXJwcmludCI6ImI0NzNmZjVhODA0ODU4YWQ2ZmYxYTdhNmQ2YzY0NjIzIiwiZGV2aWNlX2lkIjoiIiwicmVsYXRlZF9kZXZpY2VfaWRzIjoiIn0=',
-            'fvideo-id': '33ea495bf3a5a79b884c5845faf9ca5e77e32ab5',
-            'lang': 'zh-CN',
-            'Priority': 'u=1, i',
-            'Referer': 'https://www.binance.com/zh-CN/alpha/bsc/0xe6df05ce8c8301223373cf5b969afcb1498c5528',
-            'Sec-Ch-Ua': '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
-            'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"Windows"',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sentry-Trace': '847f639347bc49be967b6777b03a413c-ac242fc8bf0e51e2-0',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
-            'X-Passthrough-Token': '',
-            'X-Trace-Id': '000f2190-8b35-4cb1-aa27-d62a5017a918',
-            'X-Ui-Request-Trace': '000f2190-8b35-4cb1-aa27-d62a5017a918'
-        }
-        
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get('code') == '000000' and 'data' in data:
-                orders = data['data'].get('list', [])
-                print(f"找到 {len(orders)} 个订单")
-                
-                # 查找我们的订单
-                buy_order_found = False
-                sell_order_found = False
-                
-                for order in orders:
-                    order_id = order.get('orderId')
-                    if order_id == working_order_id:
-                        buy_order_found = True
-                        print(f"✅ 找到买单: {order_id}, 状态: {order.get('status')}")
-                    elif order_id == pending_order_id:
-                        sell_order_found = True
-                        print(f"✅ 找到卖单: {order_id}, 状态: {order.get('status')}")
-                
-                if not buy_order_found:
-                    print(f"❌ 未找到买单: {working_order_id}")
-                if not sell_order_found:
-                    print(f"❌ 未找到卖单: {pending_order_id}")
-                
-                if buy_order_found and sell_order_found:
-                    print("✅ 两个订单都已找到")
-                else:
-                    print("⚠️ 部分订单未找到，可能还在处理中")
-                    
-            else:
-                error_code = data.get('code', 'unknown')
-                error_msg = data.get('message', 'unknown error')
-                print(f"❌ 查询订单失败 - 错误代码: {error_code}, 错误信息: {error_msg}")
-        else:
-            print(f"❌ 查询订单HTTP请求失败 - 状态码: {response.status_code}")
-            
-    except Exception as e:
-        print(f"❌ 查询订单异常: {str(e)}")
-
-def test_get_price():
-    """测试获取价格功能"""
-    print("\n" + "=" * 50)
-    print("测试获取价格功能...")
-    print("=" * 50)
-    
-    symbol = "ALPHA_22USDT"
-    url = f"https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines"
-    params = {
-        'symbol': symbol,
-        'interval': '1s',
-        'limit': 1
-    }
-    
-    headers = {
-        'Accept': '*/*',
-        'Accept-Language': 'zh-CN,zh;q=0.9',
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
-    }
-    
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get('code') == '000000' and data.get('success') == True:
-                kline_data = data.get('data', [])
-                if kline_data and len(kline_data) > 0:
-                    kline = kline_data[0]
-                    price = float(kline[4])  # 收盘价
-                    print(f"✅ 获取价格成功: {symbol} = ${price}")
-                    return price
-                else:
-                    print("❌ 未获取到K线数据")
-            else:
-                print(f"❌ 获取价格失败: {data.get('message', '未知错误')}")
-        else:
-            print(f"❌ 获取价格HTTP请求失败: {response.status_code}")
-            
-    except Exception as e:
-        print(f"❌ 获取价格异常: {str(e)}")
-    
-    return None
 
 if __name__ == "__main__":
-    print("币安ALPHA下单测试脚本")
-    print("=" * 50)
+    print("\n" + "=" * 80)
+    print("Binance API place_single_order 接口测试工具")
+    print("=" * 80)
     
-    # 首先测试获取价格
-    current_price = test_get_price()
+    # 1. 对比分析
+    print("\n[步骤 1] 对比 headers")
+    missing_fields, url_mismatch = compare_headers()
     
-    if current_price:
-        print(f"\n使用当前价格 {current_price} 进行下单测试...")
-        # 更新测试价格
-        test_place_order()
-    else:
-        print("\n使用默认价格进行下单测试...")
-        test_place_order()
+    # 2. 测试接口（需要手动设置认证信息）
+    print("\n[步骤 2] 测试接口（需要先设置认证信息）")
+    print("⚠️  请编辑脚本设置 csrf_token 和 cookie 后再运行测试")
+    # test_place_order_with_full_headers()
     
-    print("\n测试完成!")
+    print("\n" + "=" * 80)
+    print("分析完成")
+    print("=" * 80)
+
